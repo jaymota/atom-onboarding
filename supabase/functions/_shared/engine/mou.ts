@@ -46,25 +46,25 @@ export interface MouDoc {
 
 const T = {
   background:
-    '**Background:** {consultant} is engaged in the business of providing new product research & development services in the packaged food and beverage sector to third party clients. The Client has approached {consultant} and is desirous of availing the Consultancy’s services for {services} (“**Project**”) of {product} (“**the Product/s**”).',
-  scopeIntro: 'The Consultant’s services & scope of work in connection with the project shall comprise the following (“**Services**”):',
+    '**Background:** {consultant} is engaged in the business of providing new product research & development services in the packaged food and beverage sector to third party clients. The Client has approached {consultant} and is desirous of availing the Consultancy’s services for {services} (**“Project”**) of {product} (**“the Product/s”**).',
+  scopeIntro: 'The Consultant’s services & scope of work in connection with the project shall comprise the following (**“Services”**):',
   timelinesIntro:
     "The deliverables and timelines set out below are indicative and based on the assumption of timely cooperation from the Client. All timelines remain subject to adjustment basis the Client's responsiveness, approval of product ideation and directions, unforeseen challenges in formulation or product development, raw material availability, regulatory requirements, or any other factor outside the Consultant's reasonable control.",
 
   // Retainer (from the Master MOU)
   feesA_r:
-    'The fees for the services set out in the Scope of Work shall be payable on a monthly retainer basis at **INR {fee}** ({feeWords}) + {gst}% GST per month (“**Monthly Retainer Fee**”). The target timeline to achieve the above is {months} from the date of commencement.',
+    'The fees for the services set out in the Scope of Work shall be payable on a monthly retainer basis at **INR {fee}** ({feeWords}) + {gst}% GST per month (**“Monthly Retainer Fee”**). The target timeline to achieve the above is {months} from the date of commencement.',
   feesB_r:
     'The Monthly Retainer Fee shall be payable in advance, on or before the 1st (first) day of each calendar month (or, in the case of the first month, on or before the date of execution of this MOU). The Client shall make payment as per the banking details provided in the invoice raised by the Consultant.',
   feesC_r:
-    'The Monthly Retainer Fee shall become due and payable within **7 (seven) calendar days** of the date of the invoice raised by the Consultant (“**Due Date**”). In the event the Client fails to make payment by the Due Date, the Consultant shall notify the Client in writing (“**Default Notice**”) and shall be entitled to **immediately suspend all services** under this MOU with effect from the date of the Default Notice, until such time as all outstanding amounts (including any accrued interest) are paid in full.',
+    'The Monthly Retainer Fee shall become due and payable within **7 (seven) calendar days** of the date of the invoice raised by the Consultant (**“Due Date”**). In the event the Client fails to make payment by the Due Date, the Consultant shall notify the Client in writing (**“Default Notice”**) and shall be entitled to **immediately suspend all services** under this MOU with effect from the date of the Default Notice, until such time as all outstanding amounts (including any accrued interest) are paid in full.',
 
   // Milestone (NEW — drafted from the milestone quote terms)
   feesA_m:
-    'The fees for the services set out in the Scope of Work shall be a fixed fee of **INR {fee}** ({feeWords}) + {gst}% GST (“**Project Fee**”). The target timeline to achieve the above is {months} from the date of commencement.',
+    'The fees for the services set out in the Scope of Work shall be a fixed fee of **INR {fee}** ({feeWords}) + {gst}% GST (**“Project Fee”**). The target timeline to achieve the above is {months} from the date of commencement.',
   feesB_m: 'The Project Fee shall be payable in the following tranches, on reaching each milestone set out below:',
   feesC_m:
-    'Each tranche shall become due and payable within **7 (seven) calendar days** of the date of the invoice raised by the Consultant on reaching the relevant milestone (“**Due Date**”). In the event the Client fails to make payment by the Due Date, the Consultant shall notify the Client in writing (“**Default Notice**”) and shall be entitled to **immediately suspend all services** under this MOU with effect from the date of the Default Notice, until such time as all outstanding amounts (including any accrued interest) are paid in full.',
+    'Each tranche shall become due and payable within **7 (seven) calendar days** of the date of the invoice raised by the Consultant on reaching the relevant milestone (**“Due Date”**). In the event the Client fails to make payment by the Due Date, the Consultant shall notify the Client in writing (**“Default Notice”**) and shall be entitled to **immediately suspend all services** under this MOU with effect from the date of the Default Notice, until such time as all outstanding amounts (including any accrued interest) are paid in full.',
 
   suspension:
     'Any period of suspension shall not count towards the Project timeline, and the Consultant shall bear no liability for any delay in deliverables arising from or consequent to such suspension.',
@@ -72,7 +72,7 @@ const T = {
     'If payment remains outstanding for more than **30 (thirty) calendar days** from the Due Date, the Consultant shall be entitled, at its sole discretion, to treat the MOU as terminated.',
 
   termIntro:
-    'Either party may terminate this MOU by providing not less than 30 (thirty) days’ prior written notice to the other party (“**Termination Notice**”). In the event of termination:',
+    'Either party may terminate this MOU by providing not less than 30 (thirty) days’ prior written notice to the other party (**“Termination Notice”**). In the event of termination:',
   termClient:
     '**Termination by the Client:** If the Client terminates this MOU for any reason other than a material breach by the Consultant, or if the Client fails to pay as per Clause 4 (Fees) and the Consultant elects to terminate under Clause 4, the following shall be payable by the Client to the Consultant:',
   termClientR1:

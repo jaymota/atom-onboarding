@@ -8,6 +8,7 @@ export function QuotePdf({ doc, company }: { doc: QuoteDoc; company: CompanySett
     <Document title={`Quotation ${doc.quoteNumber}`} author={company.name} creator={company.name}>
       <Page size="A4" style={s.page}>
         <Letterhead company={company} />
+        <Footer company={company} />
 
         <Text style={{ textAlign: 'right' }}>
           <Text style={s.bold}>Date: </Text>{doc.date}
@@ -96,7 +97,6 @@ export function QuotePdf({ doc, company }: { doc: QuoteDoc; company: CompanySett
           <Text>{doc.signoff.company}</Text>
         </View>
 
-        <Footer company={company} label={doc.quoteNumber} />
       </Page>
     </Document>
   )

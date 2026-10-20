@@ -25,7 +25,7 @@ export const s = StyleSheet.create({
   p: { marginBottom: 4 },
   bold: { fontFamily: 'Times-Bold' },
   row: { flexDirection: 'row' },
-  footer: { position: 'absolute', bottom: 24, left: 54, right: 54, borderTopWidth: 0.5, borderTopColor: '#ccc', paddingTop: 5, fontFamily: 'Prompt', fontSize: 6.8, color: '#777', textAlign: 'center', lineHeight: 1.35 },
+  footer: { position: 'absolute', bottom: 24, height: 24, left: 54, right: 54, borderTopWidth: 0.5, borderTopColor: '#ccc', paddingTop: 5, fontFamily: 'Prompt', fontSize: 6.8, color: '#777', textAlign: 'center', lineHeight: 1.35 },
   table: { borderTopWidth: 0.75, borderLeftWidth: 0.75, borderColor: '#555', marginTop: 4, marginBottom: 4 },
   tr: { flexDirection: 'row' },
   th: { borderRightWidth: 0.75, borderBottomWidth: 0.75, borderColor: '#555', padding: 3, fontFamily: 'Times-Bold', backgroundColor: TINT },
@@ -61,15 +61,12 @@ export function Letterhead({ company }: { company: CompanySettings }) {
   )
 }
 
-export function Footer({ company, label }: { company: CompanySettings; label?: string }) {
+/** Footer text on every page. Page numbers are stamped on afterwards (see generate.ts). */
+export function Footer({ company }: { company: CompanySettings }) {
   return (
     <View style={s.footer} fixed>
       <Text>{company.name} · {company.address}</Text>
-      <Text
-        render={({ pageNumber, totalPages }) =>
-          `${company.gstin ? `GSTIN ${company.gstin} · ` : ''}${company.website} · ${company.email} · ${company.phone}    ${label ? `${label} · ` : ''}Page ${pageNumber} of ${totalPages}`
-        }
-      />
+      <Text>{company.gstin ? `GSTIN ${company.gstin} · ` : ''}{company.website} · {company.email} · {company.phone}</Text>
     </View>
   )
 }

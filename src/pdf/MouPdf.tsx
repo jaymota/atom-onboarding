@@ -42,6 +42,7 @@ export function MouPdf({ doc, company }: { doc: MouDoc; company: CompanySettings
         <View style={{ alignItems: 'center', marginBottom: 10 }} fixed>
           <Image src="/atom-logo.png" style={{ width: 90 }} />
         </View>
+        <Footer company={company} />
         <Text style={{ fontFamily: 'Times-Bold', fontSize: 12, textAlign: 'center', marginBottom: 10 }}>{doc.title}</Text>
 
         <View style={s.table} wrap={false}>
@@ -87,7 +88,6 @@ export function MouPdf({ doc, company }: { doc: MouDoc; company: CompanySettings
           ))}
         </View>
 
-        <Footer company={company} label="MOU" />
       </Page>
     </Document>
   )
