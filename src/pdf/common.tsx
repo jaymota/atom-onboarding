@@ -13,12 +13,12 @@ Font.register({
 // Keep words whole (no automatic hyphenation).
 Font.registerHyphenationCallback((word) => [word])
 
-export const RED = '#DF2C21'
-export const TINT = '#FBE6E4'
+export const TEAL = '#1F8A84'
+export const TINT = '#E3F4F5'
 
 export const s = StyleSheet.create({
   page: { paddingTop: 36, paddingBottom: 64, paddingHorizontal: 54, fontFamily: 'Times-Roman', fontSize: 10.5, lineHeight: 1.4, color: '#111' },
-  letterhead: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', borderBottomWidth: 1.5, borderBottomColor: RED, paddingBottom: 10, marginBottom: 14 },
+  letterhead: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', borderBottomWidth: 1.5, borderBottomColor: TEAL, paddingBottom: 10, marginBottom: 14 },
   logo: { width: 120 },
   lhText: { fontFamily: 'Prompt', fontSize: 7.5, color: '#444', textAlign: 'right', maxWidth: 230, lineHeight: 1.35 },
   h: { fontFamily: 'Times-Bold', fontSize: 11, marginTop: 14, marginBottom: 5 },

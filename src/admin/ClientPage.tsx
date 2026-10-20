@@ -138,7 +138,7 @@ export default function ClientPage() {
     <div className="space-y-5">
       <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
         <div>
-          <Link to="/admin" className="text-sm text-neutral-500 hover:text-atom-red">← All clients</Link>
+          <Link to="/admin" className="text-sm text-neutral-500 hover:text-atom-teal">← All clients</Link>
           <h1 className="text-2xl font-semibold">{client.brand || '(no brand)'}</h1>
           <p className="text-sm text-neutral-600">{client.name} · {client.email} · {client.phone}</p>
           <p className="text-xs text-neutral-400">Added {istDateTime(client.created_at)} · {client.source === 'form' ? 'from the website form' : client.source === 'import' ? 'imported from Google Form' : 'added by hand'}</p>
@@ -165,7 +165,7 @@ export default function ClientPage() {
                     <span>{q.number ?? 'Unnumbered draft'} <span className="text-neutral-400">· v{q.version}</span></span>
                     <span className="flex items-center gap-3">
                       <Badge>{QUOTE_STATUS_LABEL[q.status] ?? q.status}</Badge>
-                      <Link to={`/admin/quote/${q.id}`} className="font-medium text-atom-red hover:underline">Open</Link>
+                      <Link to={`/admin/quote/${q.id}`} className="font-medium text-atom-teal hover:underline">Open</Link>
                     </span>
                   </li>
                 ))}
@@ -181,7 +181,7 @@ export default function ClientPage() {
                     <span>MOU · updated {istDateTime(m.updated_at)}</span>
                     <span className="flex items-center gap-3">
                       <Badge>{MOU_STATUS_LABEL[m.status] ?? m.status}</Badge>
-                      <Link to={`/admin/mou/${m.id}`} className="font-medium text-atom-red hover:underline">Open</Link>
+                      <Link to={`/admin/mou/${m.id}`} className="font-medium text-atom-teal hover:underline">Open</Link>
                     </span>
                   </li>
                 ))}
@@ -233,7 +233,7 @@ export default function ClientPage() {
             {events.length === 0 ? <p className="text-sm text-neutral-500">Nothing yet.</p> : (
               <ol className="space-y-3 text-sm">
                 {events.map((e) => (
-                  <li key={e.id} className="border-l-2 border-atom-red/30 pl-3">
+                  <li key={e.id} className="border-l-2 border-atom-teal/30 pl-3">
                     <p>{EVENT_LABEL[e.kind] ?? e.kind}{e.kind === 'status_changed' ? `: ${statusInfo(String(e.detail.status)).label}` : ''}</p>
                     {typeof e.detail.comment === 'string' && e.detail.comment && <p className="text-xs italic text-neutral-600">“{e.detail.comment}”</p>}
                     <p className="text-xs text-neutral-400">{istDateTime(e.created_at)}</p>

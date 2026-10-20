@@ -4,8 +4,8 @@ import { Link } from 'react-router-dom'
 /** Header and footer for pages the public / clients see. */
 export function PublicShell({ children }: { children: ReactNode }) {
   return (
-    <div className="flex min-h-svh flex-col bg-neutral-50">
-      <div className="h-1.5 bg-gradient-to-r from-atom-red to-atom-yellow" />
+    <div className="flex min-h-svh flex-col bg-atom-cream">
+      <div className="h-1.5 bg-gradient-to-r from-atom-teal to-atom-green" />
       <header className="border-b border-neutral-200 bg-white">
         <div className="mx-auto flex max-w-5xl items-center justify-between px-4 py-3">
           <a href="https://www.atomconsulting.in" aria-label="Atom Consultancy website">

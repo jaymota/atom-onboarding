@@ -92,12 +92,12 @@ export function escapeHtml(s: string): string {
 /** Branded email wrapper. `bodyHtml` must already be escaped. */
 export function emailLayout(title: string, bodyHtml: string, button?: { label: string; url: string }): string {
   const btn = button
-    ? `<p style="margin:28px 0"><a href="${button.url}" style="background:#DF2C21;color:#fff;text-decoration:none;padding:12px 22px;border-radius:6px;font-weight:600;display:inline-block">${escapeHtml(button.label)}</a></p>`
+    ? `<p style="margin:28px 0"><a href="${button.url}" style="background:#1F8A84;color:#fff;text-decoration:none;padding:12px 22px;border-radius:6px;font-weight:600;display:inline-block">${escapeHtml(button.label)}</a></p>`
     : ''
   return `<!doctype html><html><body style="margin:0;background:#f6f6f6;font-family:Arial,Helvetica,sans-serif;color:#111">
 <table width="100%" cellpadding="0" cellspacing="0" style="background:#f6f6f6;padding:24px 0"><tr><td align="center">
 <table width="560" cellpadding="0" cellspacing="0" style="max-width:560px;width:100%;background:#fff;border-radius:8px;overflow:hidden">
-<tr><td style="height:5px;background:linear-gradient(90deg,#DF2C21,#FFBB40)"></td></tr>
+<tr><td style="height:5px;background:linear-gradient(90deg,#1F8A84,#5F6F4B)"></td></tr>
 <tr><td style="padding:28px 32px 8px"><img src="${SITE_URL}/atom-logo.png" alt="Atom Consultancy" width="140" style="display:block"></td></tr>
 <tr><td style="padding:8px 32px 28px;font-size:15px;line-height:1.6">
 <h2 style="font-size:19px;margin:12px 0 16px">${escapeHtml(title)}</h2>${bodyHtml}${btn}

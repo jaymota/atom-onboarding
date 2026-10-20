@@ -2,7 +2,7 @@
 // (QuoteDoc) that both the live preview and the PDF draw from.
 import {
   type ModuleId, type GroupId, type Model, type Complexity,
-  MODULES, GROUPS, SCOPE_ITEMS, TIMELINE_ROWS, ASSUMPTIONS, ADDITIONAL_COSTS, FIXED_TEXT,
+  MODULES, ADD_ONS, SCOPE_ITEMS, TIMELINE_ROWS, ASSUMPTIONS, ADDITIONAL_COSTS, FIXED_TEXT,
 } from './content.ts'
 import { type Settings } from './settings.ts'
 import { fill, formatDate, formatINR, toRoman, weeksToMonthsText } from './format.ts'
@@ -33,6 +33,8 @@ export interface QuoteInput {
   productDescription: string
   variants: number
   modules: Record<ModuleId, boolean>
+  /** Standalone services added to the quote (ids from ADD_ONS). */
+  addOns: string[]
   complexity: Complexity
   complexityReason?: string
   model: Model
@@ -82,6 +84,7 @@ export interface DocTimelineRow {
   start: number
   end: number
   openEnded: boolean
+  unscheduled?: boolean
 }
 
 export interface QuoteDoc {
@@ -129,19 +132,40 @@ function baseText(settings: Settings, id: string, fallback: string): string {
   return settings.wording[id] || fallback
 }
 
+const SUBJECT_WORDS: Record<ModuleId, string> = {
+  M1: 'ideation', M2: 'recipe development', M3: 'scale-up', M4: 'compliance', M5: 'commercialisation',
+}
+
+function listJoin(words: string[]): string {
+  if (words.length <= 1) return words[0] ?? ''
+  return `${words.slice(0, -1).join(', ')} and ${words[words.length - 1]}`
+}
+
+/** "recipe development, scale-up and commercialisation" */
+export function servicesPhrase(input: QuoteInput): string {
+  const words = MODULES.filter((m) => input.modules[m.id]).map((m) => SUBJECT_WORDS[m.id])
+  for (const a of ADD_ONS) if ((input.addOns ?? []).includes(a.id)) words.push(a.name.toLowerCase().replace('fssai', 'FSSAI'))
+  return listJoin(words) || 'services'
+}
+
 export function defaultSubject(input: QuoteInput): string {
-  const services = input.modules.M1 ? 'ideation, prototyping' : 'prototyping'
   const what = [input.variants > 0 ? String(input.variants) : '', input.productDescription.trim()]
     .filter(Boolean)
     .join(' ')
-  return `Quotation for services related to ${services}, development and commercialization of ${what || '…'}`
+  return `Quotation for ${servicesPhrase(input)} of ${what || '…'}`
+}
+
+/** Phase heading, e.g. "Phase 2: Recipe Development & Standardisation". */
+export function phaseTitle(n: number, group: GroupId): string {
+  const name = group === 'addons' ? FIXED_TEXT.addonsTitle : MODULES.find((m) => m.id === group)?.name ?? ''
+  return group === 'addons' ? name : `Phase ${n}: ${name}`
 }
 
 export function defaultTranches(modules: Record<ModuleId, boolean>, tastings: number): Tranche[] {
   const names = ['Project Commencement']
-  if (modules.M3) names.push(tastings >= 4 ? 'Second Tasting' : 'First Tasting')
-  if (modules.M4) names.push('First Pilot Trial')
-  if (modules.M5) names.push('Knowledge Transfer')
+  if (modules.M2) names.push(tastings >= 4 ? 'Second Tasting' : 'First Tasting')
+  if (modules.M3) names.push('First Pilot Trial')
+  if (modules.M5) names.push('Technology Transfer')
   if (names.length === 1) names.push('Project Completion')
   const base = Math.floor(100 / names.length)
   const extra = 100 - base * names.length
@@ -194,24 +218,38 @@ export function buildQuoteDoc(input: QuoteInput, settings: Settings): QuoteDoc {
   const t = (key: string, fallback: string) => fill(input.texts[key] ?? baseText(settings, key, fallback), vars)
   const warnings: string[] = []
 
-  // ---- Scope of work: phases numbered automatically, items numbered continuously
+  // ---- Scope of work: one phase per service, numbered automatically; items numbered continuously
   const phases: DocPhase[] = []
   let itemNo = 0
   let phaseNo = 0
-  for (const group of GROUPS) {
+  const addOnsOn = ADD_ONS.filter((a) => (input.addOns ?? []).includes(a.id))
+  const groups: GroupId[] = [...MODULES.filter((m) => input.modules[m.id]).map((m) => m.id), 'addons']
+  for (const group of groups) {
     const items: DocItem[] = []
-    for (const def of SCOPE_ITEMS) {
-      if (def.group !== group || !input.modules[def.module] || input.removedItems.includes(def.id)) continue
-      const key = `item:${def.id}`
-      items.push({ id: def.id, key, n: 0, text: t(key, def.text) })
+    if (group === 'addons') {
+      for (const a of addOnsOn) {
+        if (input.removedItems.includes(a.id)) continue
+        const key = `item:${a.id}`
+        items.push({ id: a.id, key, n: 0, text: t(key, `**${a.name}:** ${a.scope}`) })
+      }
+    } else {
+      for (const def of SCOPE_ITEMS) {
+        if (def.module !== group || input.removedItems.includes(def.id)) continue
+        const key = `item:${def.id}`
+        items.push({ id: def.id, key, n: 0, text: t(key, def.text) })
+      }
     }
     for (const c of input.customItems.filter((x) => x.group === group)) {
       items.push({ id: c.id, key: `item:${c.id}`, n: 0, text: fill(input.texts[`item:${c.id}`] ?? c.text, vars), custom: true })
     }
     if (!items.length) continue
-    phaseNo += 1
+    if (group !== 'addons') phaseNo += 1
     items.forEach((it) => (it.n = ++itemNo))
-    phases.push({ group, number: phaseNo, title: `Phase ${phaseNo}`, items })
+    const titleKey = `phase:${group}`
+    phases.push({
+      group, number: phaseNo, items,
+      title: input.texts[titleKey] ?? (group === 'addons' ? baseText(settings, 'phase:addons', FIXED_TEXT.addonsTitle) : phaseTitle(phaseNo, group)),
+    })
   }
   const phaseOf = (g: GroupId) => phases.find((p) => p.group === g)?.number
 
@@ -224,15 +262,27 @@ export function buildQuoteDoc(input: QuoteInput, settings: Settings): QuoteDoc {
     const ov = input.timeline[def.id] ?? {}
     const start = ov.start ?? a?.start ?? 0
     const end = ov.end ?? a?.end ?? 0
-    const pn = phaseOf(def.group)
+    const pn = phaseOf(def.module)
     const labelKey = `tl:${def.id}`
-    const label = input.texts[labelKey] ?? `${pn ? `Phase ${pn} - ` : ''}${baseText(settings, labelKey, def.label)}`
+    const label = input.texts[labelKey] ?? `${pn ? `Phase ${pn} – ` : ''}${baseText(settings, labelKey, def.label)}`
     rows.push({ id: def.id, n: 0, labelKey, label, period: '', start, end, openEnded: !!def.openEnded })
   }
-  const totalWeeks = Math.max(0, ...rows.filter((r) => !r.openEnded).map((r) => r.end))
+  // Standalone services: scheduled by hand (weeks optional).
+  for (const a of addOnsOn) {
+    if (input.removedTimelineRows.includes(a.id)) continue
+    const ov = input.timeline[a.id] ?? {}
+    const labelKey = `tl:${a.id}`
+    rows.push({
+      id: a.id, n: 0, labelKey, label: input.texts[labelKey] ?? a.name, period: '',
+      start: ov.start ?? 0, end: ov.end ?? 0, openEnded: false, unscheduled: !(ov.start && ov.end),
+    })
+  }
+  const totalWeeks = Math.max(0, ...rows.filter((r) => !r.openEnded && !r.unscheduled).map((r) => r.end))
   rows.forEach((r, i) => {
     r.n = i + 1
-    if (r.openEnded) {
+    if (r.unscheduled) {
+      r.period = input.texts[`tlp:${r.id}`] ?? 'As agreed'
+    } else if (r.openEnded) {
       r.start = totalWeeks
       r.period = `Week ${totalWeeks} +`
     } else {
@@ -372,7 +422,7 @@ export function buildQuoteDoc(input: QuoteInput, settings: Settings): QuoteDoc {
 export function newQuoteInput(settings: Settings, opts: Partial<QuoteInput> = {}): QuoteInput {
   const model = opts.model ?? 'milestone'
   const complexity = opts.complexity ?? 'medium'
-  const modules = opts.modules ?? { M1: true, M2: true, M3: true, M4: true, M5: true, M6: false }
+  const modules = opts.modules ?? { M1: true, M2: true, M3: true, M4: true, M5: true }
   const counts = opts.counts ?? { ...settings.counts[model] }
   const suggested = settings.fees[model][complexity]
   return {
@@ -383,6 +433,7 @@ export function newQuoteInput(settings: Settings, opts: Partial<QuoteInput> = {}
     productDescription: opts.productDescription ?? '',
     variants: opts.variants ?? 1,
     modules,
+    addOns: opts.addOns ?? [],
     complexity,
     complexityReason: opts.complexityReason,
     model,
@@ -412,6 +463,7 @@ export function diffQuoteInputs(a: QuoteInput, b: QuoteInput): string[] {
   const out: string[] = []
   const mods = (q: QuoteInput) => MODULES.filter((m) => q.modules[m.id]).map((m) => m.short).join(', ')
   if (mods(a) !== mods(b)) out.push(`Modules: ${mods(a)} → ${mods(b)}`)
+  if (JSON.stringify(a.addOns ?? []) !== JSON.stringify(b.addOns ?? [])) out.push('Additional services changed')
   if (a.complexity !== b.complexity) out.push(`Complexity: ${a.complexity} → ${b.complexity}`)
   if (a.model !== b.model) out.push(`Model: ${a.model} → ${b.model}`)
   if (a.fee !== b.fee) out.push(`Fee: ${a.fee ?? '–'} → ${b.fee ?? '–'}`)

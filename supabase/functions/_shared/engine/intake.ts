@@ -1,6 +1,6 @@
 // The public intake form: questions, validation and the rules that turn a
 // submission into a first-draft quote. Edit the questions here.
-import { type ModuleId, type Complexity, MODULES } from './content.ts'
+import { type ModuleId, type Complexity, MODULES, ADD_ONS } from './content.ts'
 import { type Settings } from './settings.ts'
 import { type QuoteInput, newQuoteInput } from './quote.ts'
 
@@ -16,6 +16,8 @@ export interface Field {
   type: FieldType
   required?: boolean
   options?: string[]
+  /** Short explanation shown under each option. */
+  optionHelp?: Record<string, string>
   /** Adds an "Other" option with a text box. */
   other?: boolean
   placeholder?: string
@@ -44,13 +46,13 @@ export const INDIAN_STATES = [
   'West Bengal', 'Outside India',
 ]
 
-export const SERVICE_OPTIONS = [
-  ...MODULES.map((m) => m.name.replace(' (add-on)', '')),
-  'Not sure, please advise',
-]
+export const NOT_SURE = 'Not sure, please advise'
+export const SERVICE_OPTIONS = MODULES.map((m) => m.name)
+export const ADDON_OPTIONS = ADD_ONS.map((a) => a.name)
 
 export const COMPLEX_CATEGORIES = ['Dairy & alternatives', 'Health & nutrition supplements']
 
+/** The public intake form. Company & billing details are asked later (DETAILS_STEP). */
 export const STEPS: Step[] = [
   {
     id: 'you',
@@ -60,45 +62,13 @@ export const STEPS: Step[] = [
       { id: 'designation', label: 'Designation / role', type: 'text', required: true, half: true },
       { id: 'email', label: 'Email', type: 'email', required: true, validate: 'email', half: true },
       { id: 'phone', label: 'Phone / WhatsApp number', type: 'tel', required: true, validate: 'phone', placeholder: '+91 98765 43210', half: true },
+      { id: 'brandName', label: 'Brand name', type: 'text', required: true, half: true, help: 'Or a working name if you don’t have one yet' },
+      { id: 'companyName', label: 'Company name (if different)', type: 'text', half: true },
+      { id: 'website', label: 'Website / Instagram', type: 'text' },
       {
         id: 'describes', label: 'What best describes you?', type: 'radio', required: true, other: true,
         options: ['Launching a new brand', 'Existing brand adding a new product', 'Improving an existing product'],
       },
-    ],
-  },
-  {
-    id: 'company',
-    title: 'Company & billing details',
-    intro:
-      'Please enter these details exactly as they appear on your registration documents. We use them on your official quotation, agreement (MOU) and tax invoices.',
-    fields: [
-      { id: 'brandName', label: 'Brand name', type: 'text', required: true, half: true },
-      { id: 'legalName', label: 'Registered company / legal entity name', type: 'text', required: true, half: true, help: 'As on your GST or incorporation certificate' },
-      {
-        id: 'entityType', label: 'Entity type', type: 'select', required: true, other: true,
-        options: ['Proprietorship', 'Partnership', 'LLP', 'Private Limited', 'Public Limited', 'Not yet registered'],
-      },
-      { id: 'addressLine1', label: 'Registered address — line 1', type: 'text', required: true, placeholder: 'Building, street' },
-      { id: 'addressLine2', label: 'Address line 2', type: 'text', placeholder: 'Area, landmark (optional)' },
-      { id: 'city', label: 'City', type: 'text', required: true, half: true },
-      { id: 'state', label: 'State', type: 'select', required: true, options: INDIAN_STATES, half: true },
-      { id: 'pincode', label: 'PIN code', type: 'text', required: true, validate: 'pincode', half: true, showIf: { field: 'state', notEquals: 'Outside India' } },
-      { id: 'country', label: 'Country', type: 'text', required: true, half: true, showIf: { field: 'state', equals: 'Outside India' } },
-      { id: 'billingSame', label: 'Billing address is the same as the registered address', type: 'checkbox' },
-      { id: 'billingAddress', label: 'Billing address (with city, state and PIN code)', type: 'textarea', required: true, showIf: { field: 'billingSame', notEquals: true } },
-      { id: 'gstin', label: 'GSTIN', type: 'text', required: true, validate: 'gstin', placeholder: '27ABCDE1234F1Z5', skipWith: 'gstNotRegistered', half: true },
-      { id: 'gstNotRegistered', label: 'We are not GST registered yet', type: 'checkbox', half: true },
-      { id: 'pan', label: 'PAN of the entity', type: 'text', required: true, validate: 'pan', placeholder: 'ABCDE1234F', skipWith: 'panNotAvailable', half: true },
-      { id: 'panNotAvailable', label: 'Not applicable / not available yet', type: 'checkbox', half: true },
-      { id: 'fssai', label: 'FSSAI licence number (if any)', type: 'text', half: true },
-      { id: 'website', label: 'Website / Instagram', type: 'text', half: true },
-      { id: 'signatoryNotice', label: 'Who will sign the agreement (MOU) for your company?', type: 'notice' },
-      { id: 'signatoryName', label: 'Authorised signatory — full name', type: 'text', required: true, half: true },
-      { id: 'signatoryDesignation', label: 'Authorised signatory — designation', type: 'text', required: true, half: true },
-      { id: 'signatoryEmail', label: 'Authorised signatory — email (for e-signing)', type: 'email', required: true, validate: 'email' },
-      { id: 'billingNotice', label: 'Who should receive invoices?', type: 'notice' },
-      { id: 'billingContactName', label: 'Billing contact name', type: 'text', required: true, half: true },
-      { id: 'billingEmail', label: 'Billing email', type: 'email', required: true, validate: 'email', half: true },
     ],
   },
   {
@@ -112,9 +82,9 @@ export const STEPS: Step[] = [
           'Health & nutrition supplements', 'Sauces, spreads & condiments', 'Ready-to-eat & ready-to-cook', 'Pet food',
         ],
       },
-      { id: 'productShort', label: 'In a few words, what is the product?', type: 'text', required: true, placeholder: 'e.g. sugar free popped chips', help: 'This appears on your quotation' },
-      { id: 'productDescription', label: 'Describe the product(s) in your own words', type: 'textarea', required: true },
-      { id: 'variants', label: 'Number of products / SKUs / flavours / variants', type: 'number', required: true, half: true },
+      { id: 'productShort', label: 'In a few words, what is the product?', type: 'text', required: true, placeholder: 'e.g. sugar-free popped chips', help: 'This appears on your quotation' },
+      { id: 'productDescription', label: 'Tell us more about it', type: 'textarea', required: true, placeholder: 'Flavours, format, what makes it different…' },
+      { id: 'variants', label: 'Number of products / flavours / SKUs', type: 'number', required: true, half: true },
       {
         id: 'formulation', label: 'Do you have a formulation already?', type: 'radio', required: true,
         options: ['No, starting from scratch', 'Rough idea or home recipe', 'Existing commercial product to improve'],
@@ -126,9 +96,9 @@ export const STEPS: Step[] = [
         options: ['Sugar-free', 'No added sugar', 'High protein', 'Vegan', 'Gluten-free', 'Keto', 'Clean label', 'Organic', 'Probiotic or gut health', 'Fortified'],
       },
       { id: 'packFormat', label: 'Pack format and size', type: 'text', placeholder: 'e.g. 30 g pouch, 250 ml bottle', half: true },
+      { id: 'storage', label: 'Storage', type: 'select', options: ['Ambient', 'Chilled', 'Frozen'], half: true },
       { id: 'targetMrp', label: 'Target MRP per pack (₹)', type: 'text', half: true },
       { id: 'targetCogs', label: 'Target cost (COGS) per pack, if known (₹)', type: 'text', half: true },
-      { id: 'storage', label: 'Storage', type: 'radio', options: ['Ambient', 'Chilled', 'Frozen'] },
       { id: 'shelfLife', label: 'Desired shelf life', type: 'text', placeholder: 'e.g. 6 months', half: true },
       { id: 'firstQty', label: 'Expected first production quantity', type: 'text', placeholder: 'units or kg', half: true },
       { id: 'hasCM', label: 'Do you already have a contract manufacturer?', type: 'radio', options: ['Yes', 'No', 'Not sure'] },
@@ -138,9 +108,17 @@ export const STEPS: Step[] = [
   },
   {
     id: 'project',
-    title: 'The project',
+    title: 'How we can help',
     fields: [
-      { id: 'services', label: 'Which services are you interested in?', type: 'checkboxes', options: SERVICE_OPTIONS },
+      {
+        id: 'services', label: 'Product development services', type: 'checkboxes', options: [...SERVICE_OPTIONS, NOT_SURE],
+        optionHelp: { ...Object.fromEntries(MODULES.map((m) => [m.name, m.blurb])), [NOT_SURE]: 'We’ll recommend the right mix for your product.' },
+        help: 'Choose all that apply.',
+      },
+      {
+        id: 'addOns', label: 'Other services', type: 'checkboxes', options: ADDON_OPTIONS,
+        optionHelp: Object.fromEntries(ADD_ONS.map((a) => [a.name, a.blurb])),
+      },
       { id: 'launchDate', label: 'Target launch date', type: 'date', half: true },
       {
         id: 'budget', label: 'Indicative budget range', type: 'radio',
@@ -153,15 +131,53 @@ export const STEPS: Step[] = [
       },
       { id: 'heardFrom', label: 'How did you hear about us?', type: 'text' },
       { id: 'notes', label: 'Anything else we should know?', type: 'textarea' },
-      { id: 'accuracy', label: 'I confirm the company and billing details above are correct and may be used on official documents.', type: 'checkbox', required: true },
       { id: 'consent', label: 'I agree to be contacted by Atom Consultancy about this enquiry.', type: 'checkbox', required: true },
     ],
   },
 ]
 
+/**
+ * Asked only after the client accepts the quote — for the MOU and invoices.
+ */
+export const DETAILS_STEP: Step = {
+  id: 'company',
+  title: 'Company & billing details',
+  intro:
+    'Please enter these details exactly as they appear on your registration documents. We use them on your agreement (MOU) and tax invoices.',
+  fields: [
+    { id: 'legalName', label: 'Registered company / legal entity name', type: 'text', required: true, help: 'As on your GST or incorporation certificate' },
+    {
+      id: 'entityType', label: 'Entity type', type: 'select', required: true, other: true, half: true,
+      options: ['Proprietorship', 'Partnership', 'LLP', 'Private Limited', 'Public Limited', 'Not yet registered'],
+    },
+    { id: 'addressLine1', label: 'Registered address: line 1', type: 'text', required: true, placeholder: 'Building, street' },
+    { id: 'addressLine2', label: 'Address line 2', type: 'text', placeholder: 'Area, landmark (optional)' },
+    { id: 'city', label: 'City', type: 'text', required: true, half: true },
+    { id: 'state', label: 'State', type: 'select', required: true, options: INDIAN_STATES, half: true },
+    { id: 'pincode', label: 'PIN code', type: 'text', required: true, validate: 'pincode', half: true, showIf: { field: 'state', notEquals: 'Outside India' } },
+    { id: 'country', label: 'Country', type: 'text', required: true, half: true, showIf: { field: 'state', equals: 'Outside India' } },
+    { id: 'billingSame', label: 'Billing address is the same as the registered address', type: 'checkbox' },
+    { id: 'billingAddress', label: 'Billing address (with city, state and PIN code)', type: 'textarea', required: true, showIf: { field: 'billingSame', notEquals: true } },
+    { id: 'gstin', label: 'GSTIN', type: 'text', required: true, validate: 'gstin', placeholder: '27ABCDE1234F1Z5', skipWith: 'gstNotRegistered', half: true },
+    { id: 'gstNotRegistered', label: 'We are not GST registered yet', type: 'checkbox', half: true },
+    { id: 'pan', label: 'PAN of the entity', type: 'text', required: true, validate: 'pan', placeholder: 'ABCDE1234F', skipWith: 'panNotAvailable', half: true },
+    { id: 'panNotAvailable', label: 'Not applicable / not available yet', type: 'checkbox', half: true },
+    { id: 'fssai', label: 'FSSAI licence number (if any)', type: 'text', half: true },
+    { id: 'signatoryNotice', label: 'Who will sign the agreement for your company?', type: 'notice' },
+    { id: 'signatoryName', label: 'Authorised signatory: full name', type: 'text', required: true, half: true },
+    { id: 'signatoryDesignation', label: 'Authorised signatory: designation', type: 'text', required: true, half: true },
+    { id: 'signatoryEmail', label: 'Authorised signatory: email (for e-signing)', type: 'email', required: true, validate: 'email' },
+    { id: 'billingNotice', label: 'Who should receive invoices?', type: 'notice' },
+    { id: 'billingContactName', label: 'Billing contact name', type: 'text', required: true, half: true },
+    { id: 'billingEmail', label: 'Billing email', type: 'email', required: true, validate: 'email', half: true },
+    { id: 'accuracy', label: 'I confirm these details are correct and may be used on official documents.', type: 'checkbox', required: true },
+  ],
+}
+
 export type Answers = Record<string, string | string[] | boolean | number | undefined>
 
-export const ALL_FIELDS = STEPS.flatMap((s) => s.fields)
+export const INTAKE_FIELDS = STEPS.flatMap((s) => s.fields)
+export const ALL_FIELDS = [...INTAKE_FIELDS, ...DETAILS_STEP.fields]
 
 const RE = {
   email: /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/,
@@ -222,7 +238,11 @@ export function validateFields(fields: Field[], a: Answers): Record<string, stri
 }
 
 export function validateIntake(a: Answers): Record<string, string> {
-  return validateFields(ALL_FIELDS, a)
+  return validateFields(INTAKE_FIELDS, a)
+}
+
+export function validateDetails(a: Answers): Record<string, string> {
+  return validateFields(DETAILS_STEP.fields, a)
 }
 
 /** Clean up a submission: trim text, upper-case GSTIN/PAN, drop unknown keys. */
@@ -268,13 +288,14 @@ export function suggestComplexity(variants: number, category: string): { complex
 /** Build the first-draft quote from a form submission. */
 export function draftFromIntake(a: Answers, settings: Settings): QuoteInput {
   const services = Array.isArray(a.services) ? (a.services as string[]) : []
-  const notSure = services.length === 0 || services.includes('Not sure, please advise')
-  const modules: Record<ModuleId, boolean> = { M1: true, M2: true, M3: true, M4: true, M5: true, M6: false }
-  if (!notSure) {
-    for (const m of MODULES) modules[m.id] = services.includes(m.name.replace(' (add-on)', ''))
-  }
+  const addOnNames = Array.isArray(a.addOns) ? (a.addOns as string[]) : []
+  const addOns = ADD_ONS.filter((x) => addOnNames.includes(x.name)).map((x) => x.id)
+  const picked = MODULES.filter((m) => services.includes(m.name)).map((m) => m.id)
+  // "Not sure", or nothing picked at all → the full project. Only "other services" → just those.
+  const fullProject = services.includes(NOT_SURE) || (!picked.length && !addOns.length)
+  const modules: Record<ModuleId, boolean> = { M1: false, M2: false, M3: false, M4: false, M5: false }
+  for (const m of MODULES) modules[m.id] = fullProject || picked.includes(m.id)
   if (str(a, 'formulation') === 'Existing commercial product to improve') modules.M1 = false
-  if (!Object.values(modules).some(Boolean)) Object.assign(modules, { M1: true, M2: true, M3: true, M4: true, M5: true })
 
   const model = str(a, 'engagement') === 'Monthly retainer' ? 'retainer' : 'milestone'
   const variants = Math.max(1, Math.round(Number(a.variants) || 1))
@@ -286,6 +307,7 @@ export function draftFromIntake(a: Answers, settings: Settings): QuoteInput {
     productDescription: str(a, 'productShort'),
     variants,
     modules,
+    addOns,
     model,
     complexity,
     complexityReason: reason,
@@ -317,7 +339,7 @@ export interface ClientDetails {
 
 export function clientDetailsFromAnswers(a: Answers): ClientDetails {
   return {
-    legalName: str(a, 'legalName'),
+    legalName: str(a, 'legalName') || str(a, 'companyName'),
     brandName: str(a, 'brandName'),
     entityType: str(a, 'entityType'),
     address: fullAddress(a),
@@ -336,6 +358,11 @@ export function clientDetailsFromAnswers(a: Answers): ClientDetails {
     productShort: str(a, 'productShort'),
     variants: Math.max(1, Math.round(Number(a.variants) || 1)),
   }
+}
+
+/** Labels of the details the MOU still needs. */
+export function missingDetails(c: ClientDetails): string[] {
+  return REQUIRED_MOU_FIELDS.filter((f) => !String(c[f.key] ?? '').trim()).map((f) => f.label)
 }
 
 export const EMPTY_CLIENT: ClientDetails = clientDetailsFromAnswers({})

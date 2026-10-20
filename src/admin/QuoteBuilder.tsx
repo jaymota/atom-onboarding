@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import {
-  ASSUMPTIONS, ADDITIONAL_COSTS, COMPLEXITY_LABELS, GROUPS, MODULES, MODULE_HINTS, SCOPE_ITEMS, TIMELINE_ROWS,
+  ADD_ONS, ASSUMPTIONS, ADDITIONAL_COSTS, COMPLEXITY_LABELS, MODULES, MODULE_HINTS, SCOPE_ITEMS, TIMELINE_ROWS,
   TEMPLATE_FIXES, type Complexity, type GroupId, type Model, type ModuleId,
 } from '../../supabase/functions/_shared/engine/content.ts'
 import {
@@ -211,7 +211,7 @@ export default function QuoteBuilder() {
       {/* Top bar */}
       <div className="mb-4 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
         <div>
-          <Link to={`/admin/client/${quote.client_id}`} className="text-sm text-neutral-500 hover:text-atom-red">← {client?.brand || 'Client'}</Link>
+          <Link to={`/admin/client/${quote.client_id}`} className="text-sm text-neutral-500 hover:text-atom-teal">← {client?.brand || 'Client'}</Link>
           <h1 className="flex flex-wrap items-center gap-2 text-xl font-semibold">
             Quote {quote.number ?? '(draft — numbered on approval)'}
             <Badge tone={quote.status === 'accepted' ? 'bg-emerald-100 text-emerald-800' : dirty ? 'bg-amber-100 text-amber-800' : 'bg-neutral-100 text-neutral-700'}>{statusLabel}</Badge>
@@ -378,7 +378,7 @@ function Controls({ input, set, setModule, setComplexity, setModel, resetText }:
 }) {
   const { settings } = useSettings()
   const [hint, setHint] = useState<ModuleId | null>(null)
-  const [newItem, setNewItem] = useState<{ group: GroupId; text: string }>({ group: 'development', text: '' })
+  const [newItem, setNewItem] = useState<{ group: GroupId; text: string }>({ group: 'M2', text: '' })
   const [newClause, setNewClause] = useState('')
   const [newCost, setNewCost] = useState({ label: '', value: '' })
   const suggested = settings.fees[input.model][input.complexity]
@@ -415,7 +415,7 @@ function Controls({ input, set, setModule, setComplexity, setModel, resetText }:
         </div>
         <NumberField label="Quote valid for" value={input.validityDays} min={1} suffix="days" onChange={(n) => set({ validityDays: n })} />
         {'subject' in input.texts && (
-          <button type="button" className="text-xs text-atom-red underline" onClick={() => resetText('subject')}>Subject was edited by hand — reset to automatic</button>
+          <button type="button" className="text-xs text-atom-teal underline" onClick={() => resetText('subject')}>Subject was edited by hand — reset to automatic</button>
         )}
       </Section>
 
@@ -423,10 +423,10 @@ function Controls({ input, set, setModule, setComplexity, setModel, resetText }:
         <div className="grid gap-2">
           {[
             { on: true, title: 'Phase 1 = Ideation & Rapid Prototyping', hint: 'Client needs us to figure out the product format' },
-            { on: false, title: 'Phase 1 = Literature Review & Competitive Analysis', hint: 'Client already knows what product they want' },
+            { on: false, title: 'Phase 1 = Recipe Development & Standardisation', hint: 'Client already knows what product they want' },
           ].map((o) => (
-            <label key={String(o.on)} className={`flex cursor-pointer gap-3 rounded-md border px-3 py-2 text-sm ${input.modules.M1 === o.on ? 'border-atom-red bg-atom-red/5' : 'border-neutral-200'}`}>
-              <input type="radio" checked={input.modules.M1 === o.on} onChange={() => setModule('M1', o.on)} className="mt-1 accent-atom-red" />
+            <label key={String(o.on)} className={`flex cursor-pointer gap-3 rounded-md border px-3 py-2 text-sm ${input.modules.M1 === o.on ? 'border-atom-teal bg-atom-teal/5' : 'border-neutral-200'}`}>
+              <input type="radio" checked={input.modules.M1 === o.on} onChange={() => setModule('M1', o.on)} className="mt-1 accent-atom-teal" />
               <span><b className="font-medium">{o.title}</b><span className="block text-xs text-neutral-500">{o.hint}</span></span>
             </label>
           ))}
@@ -441,11 +441,11 @@ function Controls({ input, set, setModule, setComplexity, setModel, resetText }:
         )}
       </Section>
 
-      <Section title="3. Service modules">
+      <Section title="3. Services">
         {MODULES.map((m) => (
           <div key={m.id}>
             <div className="flex items-start justify-between gap-2">
-              <Toggle checked={input.modules[m.id]} onChange={(v) => setModule(m.id, v)} label={m.name} />
+              <Toggle checked={input.modules[m.id]} onChange={(v) => setModule(m.id, v)} label={m.name} hint={m.blurb} />
               <button type="button" onClick={() => setHint(hint === m.id ? null : m.id)} className="shrink-0 text-xs text-neutral-500 underline">
                 {hint === m.id ? 'hide' : "what's included"}
               </button>
@@ -457,7 +457,21 @@ function Controls({ input, set, setModule, setComplexity, setModel, resetText }:
             )}
           </div>
         ))}
-        <Toggle checked={input.showPhaseHeadings} onChange={(v) => set({ showPhaseHeadings: v })} label="Show “Phase 1, Phase 2…” headings in the scope" />
+        <div className="border-t border-neutral-100 pt-3">
+          <Label>Other services</Label>
+          <div className="space-y-2">
+            {ADD_ONS.map((a) => (
+              <Toggle
+                key={a.id}
+                checked={(input.addOns ?? []).includes(a.id)}
+                onChange={(on) => set({ addOns: on ? [...(input.addOns ?? []), a.id] : (input.addOns ?? []).filter((x) => x !== a.id) })}
+                label={a.name}
+                hint={a.blurb}
+              />
+            ))}
+          </div>
+        </div>
+        <Toggle checked={input.showPhaseHeadings} onChange={(v) => set({ showPhaseHeadings: v })} label="Show phase headings in the scope" />
       </Section>
 
       <Section title="4. Complexity & model">
@@ -466,7 +480,7 @@ function Controls({ input, set, setModule, setComplexity, setModel, resetText }:
           <div className="grid grid-cols-3 gap-2">
             {(['easy', 'medium', 'hard'] as Complexity[]).map((c) => (
               <button key={c} type="button" onClick={() => setComplexity(c)}
-                className={`rounded-md border px-2 py-2 text-sm font-medium ${input.complexity === c ? 'border-atom-red bg-atom-red text-white' : 'border-neutral-300 hover:border-atom-ink'}`}>
+                className={`rounded-md border px-2 py-2 text-sm font-medium ${input.complexity === c ? 'border-atom-teal bg-atom-teal text-white' : 'border-neutral-300 hover:border-atom-ink'}`}>
                 {COMPLEXITY_LABELS[c]}
               </button>
             ))}
@@ -504,12 +518,12 @@ function Controls({ input, set, setModule, setComplexity, setModel, resetText }:
           />
           {input.fee != null && <p className="mt-1 text-xs text-neutral-500">₹{formatINR(input.fee)} · {amountInWords(input.fee)}</p>}
           {suggested != null && input.fee !== suggested && (
-            <button type="button" className="mt-1 text-xs text-atom-red underline" onClick={() => set({ fee: suggested, feeConfirmed: false })}>
+            <button type="button" className="mt-1 text-xs text-atom-teal underline" onClick={() => set({ fee: suggested, feeConfirmed: false })}>
               Use suggestion: ₹{formatINR(suggested)}
             </button>
           )}
           <label className={`mt-2 flex items-center gap-2 rounded-md px-2 py-1.5 text-sm ${input.feeConfirmed ? 'bg-emerald-50 text-emerald-800' : 'bg-amber-50 text-amber-900'}`}>
-            <input type="checkbox" checked={input.feeConfirmed} onChange={(e) => set({ feeConfirmed: e.target.checked })} className="accent-atom-red" />
+            <input type="checkbox" checked={input.feeConfirmed} onChange={(e) => set({ feeConfirmed: e.target.checked })} className="accent-atom-teal" />
             {input.feeConfirmed ? 'Fee confirmed' : 'I’ve confirmed this fee (it’s only a suggestion until you tick this)'}
           </label>
         </div>
@@ -550,6 +564,19 @@ function Controls({ input, set, setModule, setComplexity, setModel, resetText }:
         Object.keys(input.timeline).length > 0 ? <button type="button" className="text-xs text-neutral-500 underline" onClick={() => set({ timeline: {} })}>reset to preset</button> : null
       }>
         <p className="text-xs text-neutral-500">Filled from the {COMPLEXITY_LABELS[input.complexity]} preset. Change any week; edit labels by clicking them in the preview.</p>
+        {ADD_ONS.filter((a) => (input.addOns ?? []).includes(a.id)).map((a) => {
+          const ov = input.timeline[a.id] ?? {}
+          const setRange = (k: 'start' | 'end', v: string) => set({ timeline: { ...input.timeline, [a.id]: { ...ov, [k]: v === '' ? undefined : Number(v) } } })
+          return (
+            <div key={a.id} className="grid grid-cols-[1fr_auto] items-center gap-2 text-sm">
+              <span className="text-xs">{a.name} <span className="text-neutral-400">(blank = “As agreed”)</span></span>
+              <span className="flex items-center gap-1 text-xs">
+                W<input type="number" min={1} value={ov.start ?? ''} onChange={(e) => setRange('start', e.target.value)} className={`${inputClass} w-16 px-2 py-1`} />
+                –W<input type="number" min={1} value={ov.end ?? ''} onChange={(e) => setRange('end', e.target.value)} className={`${inputClass} w-16 px-2 py-1`} />
+              </span>
+            </div>
+          )
+        })}
         {TIMELINE_ROWS.filter((r) => input.modules[r.module] && !r.openEnded).map((r) => {
           const auto = autoTimeline.find((a) => a.id === r.id)
           const ov = input.timeline[r.id] ?? {}
@@ -573,11 +600,11 @@ function Controls({ input, set, setModule, setComplexity, setModel, resetText }:
             <Label>Removed items</Label>
             <ul className="space-y-1 text-xs">
               {input.removedItems.map((rid) => {
-                const def = SCOPE_ITEMS.find((s) => s.id === rid)
+                const def = SCOPE_ITEMS.find((s) => s.id === rid) ?? ADD_ONS.map((a) => ({ id: a.id, text: a.scope })).find((a) => a.id === rid)
                 return (
                   <li key={rid} className="flex items-start justify-between gap-2 rounded bg-neutral-50 px-2 py-1">
                     <span className="line-through">{def ? fill(def.text, vars) : rid}</span>
-                    <button type="button" className="shrink-0 text-atom-red underline" onClick={() => set({ removedItems: input.removedItems.filter((x) => x !== rid) })}>restore</button>
+                    <button type="button" className="shrink-0 text-atom-teal underline" onClick={() => set({ removedItems: input.removedItems.filter((x) => x !== rid) })}>restore</button>
                   </li>
                 )
               })}
@@ -586,9 +613,10 @@ function Controls({ input, set, setModule, setComplexity, setModel, resetText }:
         )}
         <div>
           <Label>Add your own item</Label>
-          <Select value={newItem.group} onChange={(e) => setNewItem({ ...newItem, group: e.target.value as GroupId })} options={GROUPS.map((g) => ({
-            value: g, label: { ideation: 'Ideation phase', development: 'Development phase', scaleup: 'Scale-up / pilot phase', handover: 'Packaging & handover phase' }[g],
-          }))} />
+          <Select value={newItem.group} onChange={(e) => setNewItem({ ...newItem, group: e.target.value as GroupId })} options={[
+            ...MODULES.map((m) => ({ value: m.id, label: m.name })),
+            { value: 'addons', label: 'Additional Services' },
+          ]} />
           <TextArea className="mt-2" value={newItem.text} onChange={(e) => setNewItem({ ...newItem, text: e.target.value })} placeholder="Describe the extra deliverable…" />
           <Button size="sm" className="mt-2" disabled={!newItem.text.trim()} onClick={() => {
             set({ customItems: [...input.customItems, { id: uid('ci'), group: newItem.group, text: newItem.text.trim() }] })
@@ -633,7 +661,7 @@ function Controls({ input, set, setModule, setComplexity, setModel, resetText }:
           const text = input.texts[`assume:${a.id}`] ?? fill(settings.wording[`assume:${a.id}`] || a.text, vars)
           return (
             <label key={a.id} className="flex cursor-pointer items-start gap-2 text-xs">
-              <input type="checkbox" checked={checked} onChange={(e) => set({ assumptionsChecked: { ...input.assumptionsChecked, [a.id]: e.target.checked } })} className="mt-0.5 accent-atom-red" />
+              <input type="checkbox" checked={checked} onChange={(e) => set({ assumptionsChecked: { ...input.assumptionsChecked, [a.id]: e.target.checked } })} className="mt-0.5 accent-atom-teal" />
               <span className={checked ? '' : 'text-neutral-400'}>
                 {text}
                 {a.tag !== 'both' && <span className="ml-1 rounded bg-neutral-100 px-1 text-[10px] text-neutral-500">{a.tag} default</span>}
@@ -643,7 +671,7 @@ function Controls({ input, set, setModule, setComplexity, setModel, resetText }:
         })}
         {input.customAssumptions.map((c) => (
           <div key={c.id} className="flex items-start gap-2 text-xs">
-            <input type="checkbox" checked={input.assumptionsChecked[c.id] !== false} onChange={(e) => set({ assumptionsChecked: { ...input.assumptionsChecked, [c.id]: e.target.checked } })} className="mt-0.5 accent-atom-red" />
+            <input type="checkbox" checked={input.assumptionsChecked[c.id] !== false} onChange={(e) => set({ assumptionsChecked: { ...input.assumptionsChecked, [c.id]: e.target.checked } })} className="mt-0.5 accent-atom-teal" />
             <span className="flex-1">{input.texts[`assume:${c.id}`] ?? c.text}</span>
             <button type="button" className="text-neutral-400 hover:text-red-600" onClick={() => set({ customAssumptions: input.customAssumptions.filter((x) => x.id !== c.id) })}>✕</button>
           </div>
@@ -690,7 +718,7 @@ function ReadyModal({ open, onClose, onShare, onDownload, downloading, number }:
     <Modal open={open} onClose={onClose} title={`Quote ${number} is ready`}>
       <p className="mb-5 text-sm text-neutral-600">Approved and saved. What would you like to do?</p>
       <div className="grid gap-3 sm:grid-cols-3">
-        <button onClick={onShare} className="rounded-lg bg-atom-red px-4 py-6 text-center font-semibold text-white hover:bg-atom-red/90">
+        <button onClick={onShare} className="rounded-lg bg-atom-teal px-4 py-6 text-center font-semibold text-white hover:bg-atom-teal/90">
           <span className="block text-2xl">✉</span>Share with client
         </button>
         <button onClick={onClose} className="rounded-lg border border-neutral-300 px-4 py-6 text-center font-semibold hover:border-atom-ink">

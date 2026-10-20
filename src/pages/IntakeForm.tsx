@@ -99,7 +99,7 @@ export default function IntakeForm() {
             We've received your project details. Our team will review them and send you a scope of work and quotation shortly.
           </p>
           <p className="mt-6 text-sm text-neutral-500">
-            Questions in the meantime? Email <a className="text-atom-red underline" href="mailto:jay@atomconsulting.in">jay@atomconsulting.in</a> or call +91 93723 15541.
+            Questions in the meantime? Email <a className="text-atom-teal underline" href="mailto:jay@atomconsulting.in">jay@atomconsulting.in</a> or call +91 93723 15541.
           </p>
         </div>
       </PublicShell>
@@ -111,7 +111,7 @@ export default function IntakeForm() {
       <div ref={topRef} className="mx-auto max-w-2xl scroll-mt-4 py-8 sm:py-12">
         {step === 0 && (
           <header className="mb-8">
-            <p className="text-sm font-medium uppercase tracking-[0.25em] text-atom-red">Start your project</p>
+            <p className="text-sm font-medium uppercase tracking-[0.25em] text-atom-teal">Start your project</p>
             <h1 className="mt-2 text-2xl font-semibold sm:text-3xl">Tell us about your product</h1>
             <p className="mt-2 text-neutral-600">
               It takes about 10 minutes. Your answers are saved on this device as you go, so you can come back to finish.
@@ -127,7 +127,7 @@ export default function IntakeForm() {
             <span>{Math.round(((step + 1) / STEPS.length) * 100)}%</span>
           </div>
           <div className="h-2 overflow-hidden rounded-full bg-neutral-100">
-            <div className="h-full rounded-full bg-gradient-to-r from-atom-red to-atom-yellow transition-all" style={{ width: `${((step + 1) / STEPS.length) * 100}%` }} />
+            <div className="h-full rounded-full bg-gradient-to-r from-atom-teal to-atom-green transition-all" style={{ width: `${((step + 1) / STEPS.length) * 100}%` }} />
           </div>
           <div className="mt-3 hidden gap-2 sm:flex">
             {STEPS.map((s, i) => (
@@ -146,7 +146,7 @@ export default function IntakeForm() {
         <section className="rounded-lg border border-neutral-200 bg-white p-5 sm:p-8">
           <h2 className="text-xl font-semibold">{current.title}</h2>
           {current.intro && (
-            <div className="mt-3 rounded-md border-l-4 border-atom-red bg-atom-red/5 px-4 py-3 text-sm text-neutral-800">
+            <div className="mt-3 rounded-md border-l-4 border-atom-teal bg-atom-teal/5 px-4 py-3 text-sm text-neutral-800">
               <b>Important:</b> {current.intro}
             </div>
           )}
@@ -172,13 +172,13 @@ export default function IntakeForm() {
             </Button>
           </div>
         </section>
-        <p className="mt-4 text-center text-xs text-neutral-400">Fields marked <span className="text-atom-red">*</span> are required.</p>
+        <p className="mt-4 text-center text-xs text-neutral-400">Fields marked <span className="text-atom-teal">*</span> are required.</p>
       </div>
     </PublicShell>
   )
 }
 
-function FieldInput({ field: f, answers, error, onChange }: {
+export function FieldInput({ field: f, answers, error, onChange }: {
   field: Field
   answers: Answers
   error?: string
@@ -226,8 +226,8 @@ function FieldInput({ field: f, answers, error, onChange }: {
         <>
           <div className="grid gap-2 sm:grid-cols-2">
             {[...f.options!, ...(f.other ? ['Other'] : [])].map((o) => (
-              <label key={o} className={`flex cursor-pointer items-center gap-2 rounded-md border px-3 py-2 text-sm transition ${v === o ? 'border-atom-red bg-atom-red/5' : 'border-neutral-200 hover:border-neutral-400'}`}>
-                <input type="radio" name={f.id} checked={v === o} onChange={() => onChange(f.id, o)} className="accent-atom-red" />
+              <label key={o} className={`flex cursor-pointer items-center gap-2 rounded-md border px-3 py-2 text-sm transition ${v === o ? 'border-atom-teal bg-atom-teal/5' : 'border-neutral-200 hover:border-neutral-400'}`}>
+                <input type="radio" name={f.id} checked={v === o} onChange={() => onChange(f.id, o)} className="accent-atom-teal" />
                 {o}
               </label>
             ))}
@@ -241,14 +241,17 @@ function FieldInput({ field: f, answers, error, onChange }: {
         <>
           <div className="grid gap-2 sm:grid-cols-2">
             {[...f.options!, ...(f.other ? ['Other'] : [])].map((o) => (
-              <label key={o} className={`flex cursor-pointer items-center gap-2 rounded-md border px-3 py-2 text-sm transition ${arr.includes(o) ? 'border-atom-red bg-atom-red/5' : 'border-neutral-200 hover:border-neutral-400'}`}>
+              <label key={o} className={`flex cursor-pointer ${f.optionHelp ? 'items-start' : 'items-center'} gap-2 rounded-md border px-3 py-2 text-sm transition ${arr.includes(o) ? 'border-atom-teal bg-atom-teal/5' : 'border-neutral-200 hover:border-neutral-400'}`}>
                 <input
                   type="checkbox"
                   checked={arr.includes(o)}
                   onChange={(e) => onChange(f.id, e.target.checked ? [...arr, o] : arr.filter((x) => x !== o))}
-                  className="accent-atom-red"
+                  className={`accent-atom-teal ${f.optionHelp ? 'mt-1' : ''}`}
                 />
-                {o}
+                <span>
+                  {o}
+                  {f.optionHelp?.[o] && <span className="mt-0.5 block text-xs text-neutral-500">{f.optionHelp[o]}</span>}
+                </span>
               </label>
             ))}
           </div>
@@ -260,8 +263,8 @@ function FieldInput({ field: f, answers, error, onChange }: {
       return (
         <div id={id} className={`${full ? 'sm:col-span-2' : ''} flex flex-col justify-end`}>
           <label className="flex cursor-pointer items-start gap-2 text-sm">
-            <input type="checkbox" checked={v === true} onChange={(e) => onChange(f.id, e.target.checked)} className="mt-0.5 h-4 w-4 accent-atom-red" />
-            <span>{f.label}{f.required && <span className="text-atom-red"> *</span>}</span>
+            <input type="checkbox" checked={v === true} onChange={(e) => onChange(f.id, e.target.checked)} className="mt-0.5 h-4 w-4 accent-atom-teal" />
+            <span>{f.label}{f.required && <span className="text-atom-teal"> *</span>}</span>
           </label>
           {error && <p className="mt-1 text-xs font-medium text-red-600">{error}</p>}
         </div>

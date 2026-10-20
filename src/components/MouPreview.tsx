@@ -21,7 +21,7 @@ function Blocks({ blocks, admin }: { blocks: Block[]; admin: boolean }) {
           return (
             <table key={i} className="my-2 w-full border-collapse text-[13px]">
               <thead>
-                <tr className="bg-atom-red/10">
+                <tr className="bg-atom-teal/10">
                   {b.headers.map((h, j) => <th key={j} style={{ width: `${b.widths[j]}%` }} className="border border-neutral-400 px-2 py-1 text-left">{h}</th>)}
                 </tr>
               </thead>
@@ -64,7 +64,7 @@ export function MouPreview({ doc, company, editing, admin = false }: { doc: MouD
           <tbody>
             <tr><td colSpan={2} className="border border-neutral-500 px-2 py-1"><b>Effective Date:</b> {doc.effectiveDate || <span className="text-neutral-400">(filled in when the last party signs)</span>}</td></tr>
             <tr><td colSpan={2} className="border border-neutral-500 px-2 py-1"><b>Place:</b> {doc.place}</td></tr>
-            <tr className="bg-atom-red/10">
+            <tr className="bg-atom-teal/10">
               <th className="w-1/2 border border-neutral-500 px-2 py-1 text-left">FIRST PARTY (“Consultant”)</th>
               <th className="w-1/2 border border-neutral-500 px-2 py-1 text-left">SECOND PARTY (“Client”)</th>
             </tr>

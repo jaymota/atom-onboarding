@@ -2,7 +2,7 @@
 // quote and the client's details. Clauses marked isNew were drafted for the
 // milestone model and must be reviewed by a lawyer (shown to Jay only).
 import { type Settings } from './settings.ts'
-import { type QuoteInput, type QuoteDoc, buildQuoteDoc } from './quote.ts'
+import { type QuoteInput, type QuoteDoc, buildQuoteDoc, servicesPhrase } from './quote.ts'
 import { type ClientDetails, REQUIRED_MOU_FIELDS } from './intake.ts'
 import { amountInWords, fill, formatDate, formatINR, toLetter } from './format.ts'
 
@@ -146,7 +146,7 @@ export function buildMouDoc(input: MouInput, settings: Settings): MouDoc {
   const milestone = q.model === 'milestone'
   const gst = settings.gstRate
   const fee = q.fee ?? 0
-  const services = q.modules.M1 ? 'ideation, prototyping, development and commercialization' : 'prototyping, development and commercialization'
+  const services = servicesPhrase(q)
   const product = [c.variants || q.variants, c.productShort || q.productDescription].filter(Boolean).join(' ')
   const vars = {
     consultant: co.name,

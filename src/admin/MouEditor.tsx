@@ -184,7 +184,7 @@ export default function MouEditor() {
     <div>
       <div className="mb-4 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
         <div>
-          <Link to={`/admin/client/${mou.client_id}`} className="text-sm text-neutral-500 hover:text-atom-red">← {input.client.brandName || input.quote.brand || 'Client'}</Link>
+          <Link to={`/admin/client/${mou.client_id}`} className="text-sm text-neutral-500 hover:text-atom-teal">← {input.client.brandName || input.quote.brand || 'Client'}</Link>
           <h1 className="flex flex-wrap items-center gap-2 text-xl font-semibold">
             MOU
             <Badge>{MOU_STATUS_LABEL[mou.status] ?? mou.status}</Badge>
@@ -257,7 +257,7 @@ export default function MouEditor() {
             ) : (
               <div className="space-y-3 text-sm">
                 <ol className="list-decimal space-y-1 pl-5 text-neutral-700">
-                  <li><button className="text-atom-red underline" onClick={download}>Download the final MOU PDF</button>.</li>
+                  <li><button className="text-atom-teal underline" onClick={download}>Download the final MOU PDF</button>.</li>
                   <li>Open BoldSign → <b>Send document</b> → upload the PDF.</li>
                   <li>Add signers: <b>{input.client.signatoryName || 'client signatory'}</b> ({input.client.signatoryEmail || 'email'}) first, then <b>you</b>.</li>
                   <li>Drag a <b>Signature</b> and a <b>Date signed</b> field onto each signature box on the last page → <b>Send</b>.</li>

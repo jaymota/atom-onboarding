@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
 import {
-  ADDITIONAL_COSTS, ASSUMPTIONS, COMPLEXITY_LABELS, DEFAULT_PRESETS, FIXED_TEXT, SCOPE_ITEMS, TIMELINE_ROWS,
+  ADD_ONS, ADDITIONAL_COSTS, ASSUMPTIONS, COMPLEXITY_LABELS, DEFAULT_PRESETS, FIXED_TEXT, SCOPE_ITEMS, TIMELINE_ROWS,
   type Complexity, type Model,
 } from '../../supabase/functions/_shared/engine/content.ts'
 import { mouTemplateText } from '../../supabase/functions/_shared/engine/mou.ts'
@@ -43,7 +43,7 @@ export default function SettingsPage() {
       </div>
       <div className="mb-5 flex gap-1 overflow-x-auto border-b border-neutral-200">
         {TABS.map((t) => (
-          <button key={t} onClick={() => setTab(t)} className={`whitespace-nowrap border-b-2 px-3 py-2 text-sm font-medium ${tab === t ? 'border-atom-red text-atom-ink' : 'border-transparent text-neutral-500 hover:text-atom-ink'}`}>
+          <button key={t} onClick={() => setTab(t)} className={`whitespace-nowrap border-b-2 px-3 py-2 text-sm font-medium ${tab === t ? 'border-atom-teal text-atom-ink' : 'border-transparent text-neutral-500 hover:text-atom-ink'}`}>
             {t}
           </button>
         ))}
@@ -220,13 +220,14 @@ function WordingTab({ draft, setDraft }: TabProps) {
   const [filter, setFilter] = useState('')
   const groups: { title: string; items: { key: string; label: string; text: string }[] }[] = [
     { title: 'Scope of work items', items: SCOPE_ITEMS.map((s) => ({ key: `item:${s.id}`, label: `${s.module} · ${s.id}`, text: s.text })) },
+    { title: 'Other services (scope lines)', items: ADD_ONS.map((a) => ({ key: `item:${a.id}`, label: a.name, text: `**${a.name}:** ${a.scope}` })) },
     { title: 'Fee assumptions', items: ASSUMPTIONS.map((a) => ({ key: `assume:${a.id}`, label: `${a.tag}${a.requires ? ` · needs ${a.requires}` : ''}`, text: a.text })) },
     { title: 'Timeline labels', items: TIMELINE_ROWS.map((r) => ({ key: `tl:${r.id}`, label: r.module, text: r.label })) },
     { title: 'Additional cost rows', items: ADDITIONAL_COSTS.map((c) => ({ key: `cost:${c.id}`, label: c.id, text: c.label })) },
     {
       title: 'Fixed quote text',
       items: [
-        ['intro', FIXED_TEXT.intro], ['fees:milestone', FIXED_TEXT.feesMilestone], ['fees:retainer', FIXED_TEXT.feesRetainer],
+        ['intro', FIXED_TEXT.intro], ['phase:addons', FIXED_TEXT.addonsTitle], ['fees:milestone', FIXED_TEXT.feesMilestone], ['fees:retainer', FIXED_TEXT.feesRetainer],
         ['tranchesIntro', FIXED_TEXT.tranchesIntro], ['retainerPayable', FIXED_TEXT.retainerPayable],
         ['assumptions:milestone', FIXED_TEXT.assumptionsMilestone], ['assumptions:retainer', FIXED_TEXT.assumptionsRetainer],
         ['validity', FIXED_TEXT.validity], ['mouNote', FIXED_TEXT.mouNote],
@@ -258,7 +259,7 @@ function WordingTab({ draft, setDraft }: TabProps) {
                 return (
                   <div key={i.key}>
                     <div className="mb-1 flex items-center justify-between text-xs text-neutral-500">
-                      <span>{i.label}{custom && <span className="ml-2 rounded bg-atom-yellow/30 px-1.5 text-neutral-800">your wording</span>}</span>
+                      <span>{i.label}{custom && <span className="ml-2 rounded bg-atom-aqua px-1.5 text-neutral-800">your wording</span>}</span>
                       {custom && <button className="underline" onClick={() => setWord(i.key, '', i.text)}>reset to template</button>}
                     </div>
                     <TextArea rows={Math.min(6, Math.ceil((draft.wording[i.key] ?? i.text).length / 110) + 1)} value={draft.wording[i.key] ?? i.text} onChange={(e) => setWord(i.key, e.target.value, i.text)} />

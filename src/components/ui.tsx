@@ -3,7 +3,7 @@ import { useEffect, useRef, useState, type ButtonHTMLAttributes, type ReactNode 
 type Variant = 'primary' | 'secondary' | 'ghost' | 'danger' | 'dark'
 
 const VARIANTS: Record<Variant, string> = {
-  primary: 'bg-atom-red text-white hover:bg-atom-red/90 disabled:bg-atom-red/50',
+  primary: 'bg-atom-teal text-white hover:bg-atom-teal/90 disabled:bg-atom-teal/50',
   secondary: 'border border-neutral-300 bg-white text-atom-ink hover:border-atom-ink disabled:opacity-50',
   ghost: 'text-neutral-700 hover:bg-neutral-100 disabled:opacity-50',
   danger: 'border border-red-300 bg-white text-red-700 hover:bg-red-50 disabled:opacity-50',
@@ -37,20 +37,20 @@ export function Spinner({ className = 'h-6 w-6' }: { className?: string }) {
 
 export function PageSpinner() {
   return (
-    <div className="flex min-h-[40vh] items-center justify-center text-atom-red">
+    <div className="flex min-h-[40vh] items-center justify-center text-atom-teal">
       <Spinner className="h-8 w-8" />
     </div>
   )
 }
 
 export const inputClass =
-  'w-full rounded-md border border-neutral-300 bg-white px-3 py-2 text-sm outline-none transition focus:border-atom-red focus:ring-2 focus:ring-atom-red/20 disabled:bg-neutral-100'
+  'w-full rounded-md border border-neutral-300 bg-white px-3 py-2 text-sm outline-none transition focus:border-atom-teal focus:ring-2 focus:ring-atom-teal/20 disabled:bg-neutral-100'
 
 export function Label({ children, required, htmlFor }: { children: ReactNode; required?: boolean; htmlFor?: string }) {
   return (
     <label htmlFor={htmlFor} className="mb-1 block text-sm font-medium text-neutral-800">
       {children}
-      {required && <span className="text-atom-red"> *</span>}
+      {required && <span className="text-atom-teal"> *</span>}
     </label>
   )
 }
@@ -110,7 +110,7 @@ export function Toggle({ checked, onChange, label, hint, disabled }: { checked: 
         aria-checked={checked}
         disabled={disabled}
         onClick={() => onChange(!checked)}
-        className={`relative mt-0.5 h-5 w-9 shrink-0 rounded-full transition ${checked ? 'bg-atom-red' : 'bg-neutral-300'}`}
+        className={`relative mt-0.5 h-5 w-9 shrink-0 rounded-full transition ${checked ? 'bg-atom-teal' : 'bg-neutral-300'}`}
       >
         <span className={`absolute top-0.5 h-4 w-4 rounded-full bg-white shadow transition ${checked ? 'left-[18px]' : 'left-0.5'}`} />
       </button>
@@ -193,7 +193,7 @@ export function Editable({
         title="Click to edit"
         onClick={() => setEditing(true)}
         onKeyDown={(e) => e.key === 'Enter' && setEditing(true)}
-        className={`cursor-text rounded-sm decoration-atom-yellow decoration-2 underline-offset-4 outline-none hover:bg-atom-yellow/15 focus:bg-atom-yellow/15 ${edited ? 'underline decoration-dotted' : ''} ${className}`}
+        className={`cursor-text rounded-sm decoration-atom-teal decoration-2 underline-offset-4 outline-none hover:bg-atom-aqua/60 focus:bg-atom-aqua/60 ${edited ? 'underline decoration-dotted' : ''} ${className}`}
       >
         <RichText text={text} />
         {badge}
@@ -201,7 +201,7 @@ export function Editable({
     )
   }
   return (
-    <span className="my-1 block rounded-md border border-atom-red/40 bg-white p-2 font-sans shadow-sm">
+    <span className="my-1 block rounded-md border border-atom-teal/40 bg-white p-2 font-sans shadow-sm">
       <textarea
         ref={ref}
         value={draft}
@@ -214,7 +214,7 @@ export function Editable({
             setEditing(false)
           }
         }}
-        className="w-full resize-y rounded border border-neutral-200 p-2 text-sm outline-none focus:border-atom-red"
+        className="w-full resize-y rounded border border-neutral-200 p-2 text-sm outline-none focus:border-atom-teal"
       />
       <span className="mt-1 flex flex-wrap items-center gap-2 text-xs">
         <Button size="sm" onClick={() => { onSave(draft); setEditing(false) }}>Save</Button>

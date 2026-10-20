@@ -4,11 +4,12 @@ export const CLIENT_STATUSES: { id: string; label: string; tone: string }[] = [
   { id: 'quote_sent', label: 'Quote sent', tone: 'bg-indigo-100 text-indigo-800' },
   { id: 'changes_requested', label: 'Changes requested', tone: 'bg-amber-100 text-amber-800' },
   { id: 'quote_accepted', label: 'Quote accepted', tone: 'bg-emerald-100 text-emerald-800' },
+  { id: 'awaiting_details', label: 'Awaiting company details', tone: 'bg-amber-100 text-amber-800' },
   { id: 'mou_draft', label: 'MOU draft', tone: 'bg-neutral-100 text-neutral-700' },
   { id: 'mou_sent', label: 'MOU sent', tone: 'bg-indigo-100 text-indigo-800' },
   { id: 'signed_by_client', label: 'Signed by client', tone: 'bg-teal-100 text-teal-800' },
   { id: 'fully_signed', label: 'Fully signed', tone: 'bg-emerald-200 text-emerald-900' },
-  { id: 'project_started', label: 'Project started', tone: 'bg-atom-yellow/30 text-neutral-900' },
+  { id: 'project_started', label: 'Project started', tone: 'bg-atom-aqua text-atom-ink' },
   { id: 'lost', label: 'Lost / Not proceeding', tone: 'bg-red-100 text-red-800' },
 ]
 

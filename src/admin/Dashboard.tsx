@@ -120,7 +120,7 @@ export default function Dashboard() {
                   return (
                     <tr key={r.id} className="flex flex-col gap-1 px-4 py-3 hover:bg-neutral-50 sm:table-row sm:px-0">
                       <td className="sm:px-4 sm:py-3">
-                        <Link to={`/admin/client/${r.id}`} className="font-medium hover:text-atom-red">{r.brand || '(no brand)'}</Link>
+                        <Link to={`/admin/client/${r.id}`} className="font-medium hover:text-atom-teal">{r.brand || '(no brand)'}</Link>
                         <p className="text-xs text-neutral-500">{r.name}{r.source === 'import' ? ' · imported' : ''}</p>
                       </td>
                       <td className="sm:px-4 sm:py-3">
@@ -132,7 +132,7 @@ export default function Dashboard() {
                       </td>
                       <td className="text-xs text-neutral-500 sm:px-4 sm:py-3">{istDate(r.created_at)}</td>
                       <td className="sm:px-4 sm:py-3 sm:text-right">
-                        {q && <Link to={`/admin/quote/${q.id}`} className="text-sm font-medium text-atom-red hover:underline">Open quote →</Link>}
+                        {q && <Link to={`/admin/quote/${q.id}`} className="text-sm font-medium text-atom-teal hover:underline">Open quote →</Link>}
                       </td>
                     </tr>
                   )

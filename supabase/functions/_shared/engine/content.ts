@@ -1,135 +1,170 @@
-// Default wording for quotes, taken from Atom Consultancy's own quote templates.
-// Prices are NOT stored here (this code is public) — they live in the private
-// Settings row in the database.
+// Default wording for quotes. Prices are NOT stored here (this code is public) —
+// they live in the private Settings row in the database.
 
-export type ModuleId = 'M1' | 'M2' | 'M3' | 'M4' | 'M5' | 'M6'
-export type GroupId = 'ideation' | 'development' | 'scaleup' | 'handover'
+export type ModuleId = 'M1' | 'M2' | 'M3' | 'M4' | 'M5'
+export type GroupId = ModuleId | 'addons'
 export type Model = 'milestone' | 'retainer'
 export type Complexity = 'easy' | 'medium' | 'hard'
 
-export const MODULES: { id: ModuleId; name: string; short: string; optional?: boolean }[] = [
-  { id: 'M1', name: 'Ideation & Rapid Prototyping', short: 'Ideation' },
-  { id: 'M2', name: 'Literature Review & Competitive Analysis', short: 'Literature review' },
-  { id: 'M3', name: 'Raw Material Procurement & Tabletop Development', short: 'Tabletop development' },
-  { id: 'M4', name: 'Contract Manufacturer Identification & Pilot Trials', short: 'Pilot trials' },
-  { id: 'M5', name: 'Packaging, FSSAI Compliance & Handover', short: 'Packaging & handover' },
-  { id: 'M6', name: 'Commercial Batch Advisory (add-on)', short: 'Commercial batch', optional: true },
+/** The five core services, in project order. Each switched-on module becomes a phase. */
+export const MODULES: { id: ModuleId; name: string; short: string; blurb: string }[] = [
+  {
+    id: 'M1', name: 'Ideation & Rapid Prototyping', short: 'Ideation',
+    blurb: 'Feasibility check and quick samples to explore product directions (for ideation only; no IP transfer).',
+  },
+  {
+    id: 'M2', name: 'Recipe Development & Standardisation', short: 'Recipe development',
+    blurb: 'Tabletop recipe trials, raw material standardisation and a documented tabletop process.',
+  },
+  {
+    id: 'M3', name: 'Contract Manufacturing & Scale-up', short: 'Scale-up',
+    blurb: 'Finding the right manufacturer, running pilot trials and standardising the product at scale.',
+  },
+  {
+    id: 'M4', name: 'Compliance & Licensing', short: 'Compliance',
+    blurb: 'FSSAI licensing, label compliance and packaging compliance.',
+  },
+  {
+    id: 'M5', name: 'Commercial Alignment', short: 'Commercialisation',
+    blurb: 'Technology transfer and SOP handover, MRP costing and support for the first commercial run.',
+  },
 ]
 
-/** Phase groups, in order. Phase numbers are given to the groups that have items. */
-export const GROUPS: GroupId[] = ['ideation', 'development', 'scaleup', 'handover']
+/** Standalone services a client can ask for on their own or alongside a project. */
+export const ADD_ONS: { id: string; name: string; blurb: string; scope: string }[] = [
+  {
+    id: 'x-fssai', name: 'FSSAI Licensing',
+    blurb: 'A new FSSAI licence or registration, or changes to an existing one.',
+    scope: 'Obtain the required FSSAI licence or registration, or modify an existing one.',
+  },
+  {
+    id: 'x-shelf', name: 'Shelf-life Extension',
+    blurb: 'Longer shelf life for an existing product through formulation, process and packaging changes.',
+    scope: 'Extend the shelf life of the existing product through formulation, process and packaging changes, validated by testing.',
+  },
+  {
+    id: 'x-advisory', name: 'Advisory Services',
+    blurb: 'Expert guidance on product, process, regulatory or commercial decisions.',
+    scope: 'Provide expert advice on product, process, regulatory and commercial decisions as required.',
+  },
+  {
+    id: 'x-cm', name: 'Contract Manufacturer Alignment',
+    blurb: 'Finding and onboarding the right manufacturer for an existing product.',
+    scope: 'Identify, assess and onboard a suitable contract manufacturer for the existing product.',
+  },
+  {
+    id: 'x-approval', name: 'Product Approvals',
+    blurb: 'FSSAI product approval for novel, nutraceutical or non-standardised products.',
+    scope: 'Prepare and file the FSSAI product approval application and support it through to approval.',
+  },
+]
 
 export interface ScopeItemDef {
   id: string
   module: ModuleId
-  group: GroupId
   text: string
 }
 
 // {prototypes} {tastings} {trials} are filled from the quote. {perMonth} becomes
 // " per month" on retainer quotes and "" on milestone quotes.
 export const SCOPE_ITEMS: ScopeItemDef[] = [
-  { id: 'm1-1', module: 'M1', group: 'ideation', text: 'Provide ideation services, competitive analysis and conduct feasibility studies for the relevant product categories.' },
-  { id: 'm1-2', module: 'M1', group: 'ideation', text: 'Create up to {prototypes} rapid prototypes of initial product concepts to understand product directions.' },
-  { id: 'm1-3', module: 'M1', group: 'ideation', text: 'Shortlist a range of prototypes to commence validation and standardization.' },
+  { id: 'm1-1', module: 'M1', text: 'Assess the feasibility of the product concept and benchmark competing products.' },
+  { id: 'm1-2', module: 'M1', text: 'Create up to {prototypes} rapid prototypes to explore product directions.' },
+  { id: 'm1-3', module: 'M1', text: 'Shortlist the strongest prototypes for recipe development.' },
 
-  { id: 'm2-1', module: 'M2', group: 'development', text: 'Perform a literature review and market analysis to deeply understand the ingredients, claims, nutrition, positioning, price points, contract manufacturing details and flavours of similar products in the market.' },
-  { id: 'm2-2', module: 'M2', group: 'development', text: 'Develop the theoretical Bill of Materials (BOM) for the products that meet specifications.' },
-  { id: 'm4-0', module: 'M4', group: 'development', text: 'Identify potential contract manufacturers with the relevant machinery and know how to manufacture the products at scale.' },
-  { id: 'm3-1', module: 'M3', group: 'development', text: 'Procure raw materials from vendors to identify the most suitable quality ingredient for the trials.' },
-  { id: 'm3-2', module: 'M3', group: 'development', text: 'Take iterative table top trials to standardise the formulations as per the target product profile and optimise for flavour, stability and nutrition.' },
-  { id: 'm3-3', module: 'M3', group: 'development', text: 'Perform sensory analysis against benchmark products with the client over {tastings} tasting sessions{perMonth} to qualify the formulation for pilot trials.' },
+  { id: 'm2-1', module: 'M2', text: 'Research benchmark products: ingredients, claims, nutrition, pricing and positioning.' },
+  { id: 'm2-2', module: 'M2', text: 'Build the theoretical Bill of Materials (BOM) against the target product profile.' },
+  { id: 'm2-3', module: 'M2', text: 'Source and standardise raw materials from qualified vendors.' },
+  { id: 'm2-4', module: 'M2', text: 'Develop the recipe through iterative tabletop trials, optimising taste, texture, stability and nutrition.' },
+  { id: 'm2-5', module: 'M2', text: 'Hold {tastings} tasting sessions{perMonth} against benchmark products to finalise the recipe with you.' },
+  { id: 'm2-6', module: 'M2', text: 'Document the standardised tabletop recipe and process.' },
 
-  { id: 'm4-1', module: 'M4', group: 'scaleup', text: 'Shortlist contract manufacturers with the right capacity, certifications, technology and overall support to commercialize the products.' },
-  { id: 'm4-2', module: 'M4', group: 'scaleup', text: 'Perform up to {trials} pilot trials{perMonth} at the contract manufacturers facility to recreate the tabletop recipe at the facility.' },
-  { id: 'm4-3', module: 'M4', group: 'scaleup', text: 'Create SOPs for manufacturing the product at the relevant facilities to ensure product consistency and safety, while validating the product specifications.' },
-  { id: 'm4-4', module: 'M4', group: 'scaleup', text: 'Send the product for shelf life and nutrition testing to a 3rd Party NABL lab for mandatory compliance tests.' },
+  { id: 'm3-1', module: 'M3', text: 'Identify and shortlist contract manufacturers with the right equipment, capacity and certifications.' },
+  { id: 'm3-2', module: 'M3', text: 'Run up to {trials} pilot trials{perMonth} to reproduce the recipe at scale.' },
+  { id: 'm3-3', module: 'M3', text: 'Standardise the product at scale and write manufacturing SOPs for consistency and food safety.' },
+  { id: 'm3-4', module: 'M3', text: 'Arrange shelf-life and nutrition testing at a NABL-accredited lab.' },
 
-  { id: 'm5-1', module: 'M5', group: 'handover', text: 'Identify packaging options basis the packaging line and support in procuring the packaging materials (PM) by identifying vendors that can meet the requirements.' },
-  { id: 'm5-2', module: 'M5', group: 'handover', text: 'Provide the required labelling compliance to the team to commence packaging development.' },
-  { id: 'm5-3', module: 'M5', group: 'handover', text: 'Provide a Technical Transfer Document (TTD) covering the entire operation: raw material sourcing, production guidelines, quality standards (including CCPs), SOPs and vendor details.' },
-  { id: 'm6-1', module: 'M6', group: 'handover', text: 'Provide advisory services for manufacturing the commercial batch of the product.' },
+  { id: 'm4-1', module: 'M4', text: 'Advise on the FSSAI licence required and support the application.' },
+  { id: 'm4-2', module: 'M4', text: 'Provide label compliance details (nutrition panel, ingredients, claims, allergens and legal metrology) for the packaging artwork.' },
+  { id: 'm4-3', module: 'M4', text: 'Recommend compliant packaging formats and materials, and identify packaging vendors.' },
+
+  { id: 'm5-1', module: 'M5', text: 'Hand over a Technology Transfer Document: final recipe, process SOPs, quality checks (including CCPs) and vendor list.' },
+  { id: 'm5-2', module: 'M5', text: 'Prepare product costing to support MRP setting.' },
+  { id: 'm5-3', module: 'M5', text: 'Support the first commercial production run.' },
 ]
 
 /** Detailed tasks from the Atom Project Checklist — shown to Jay only, as a hint. */
 export const MODULE_HINTS: Record<ModuleId, string[]> = {
   M1: [
-    'Ideation workshop and category feasibility',
-    'Rapid prototypes of initial concepts',
-    'Shortlist prototypes for validation',
+    'Category feasibility and competitor benchmarking',
+    'Rapid prototypes of initial concepts (ideation only, no IP)',
+    'Shortlist prototypes for development',
   ],
   M2: [
-    'Literature on ingredient functionality, regulatory limits, health benefits (min. 5 sources per key claim)',
-    'FSSAI limits, category classification and permissible claims',
+    'Literature on ingredient functionality and regulatory limits (5+ sources per key claim)',
     '15–20 competitor products documented; 3+ benchmarks selected',
-    'Benchmark tasting and samples log',
-    'Target Product Profile (TPP) approved before lab work',
-    'Theoretical formulation and cost per serve vs target COGS (±15%)',
+    'Target Product Profile approved before lab work; theoretical formulation and COGS (±15%)',
+    '2–3 vendors per ingredient; samples, COAs, MOQ and pricing',
+    'Iterative tabletop trials; internal hedonic tasting; QC parameters (pH, moisture, Aw, Brix…)',
+    'Client tasting rounds, written sign-off, locked recipe and tabletop SOP',
   ],
   M3: [
-    '2–3 vendors per ingredient; samples, COAs, MOQ and pricing',
-    'Iterative tabletop trials with hypothesis → conclusion log',
-    'Internal hedonic tasting (3+ panellists) and QC parameters (pH, moisture, Aw, Brix…)',
-    'Client tasting rounds and written tabletop sign-off',
-    'Locked final recipe and tabletop SOP',
-  ],
-  M4: [
     'CM longlist (8+), shortlist 3 with MOQ, conversion and pilot costs',
     'Schedule IV / FSSAI audit of shortlisted CMs; client approves CM',
-    'Pilot trial plan (scaled recipe, CCPs, QC checkpoints)',
-    'Pilot trial report within 48 hrs; 2 consistent batches',
-    'Client tasting of pilot product; shelf-life protocol and NABL lab tests',
+    'Pilot trial plan (scaled recipe, CCPs, QC checkpoints); report within 48 hrs',
+    '2 consistent pilot batches; client tasting of pilot product',
+    'Shelf-life protocol and NABL lab testing',
+  ],
+  M4: [
+    'FSSAI licence category confirmed and application support',
+    'Label compliance checklist for every SKU and artwork sign-off',
+    'Client packaging brief; 5+ PM vendors, 3 shortlisted; PM spec locked',
   ],
   M5: [
-    'Client packaging brief; 5+ PM vendors, 3 shortlisted',
-    'PM spec sheet locked and shared with CM',
-    'Label compliance checklist and artwork sign-off',
-    'FSSAI licence category confirmed / application support',
-    'Technical Transfer Document and knowledge-transfer session',
+    'Technology Transfer Document and knowledge-transfer session',
+    'Costing for MRP setting',
+    'Oversee first commercial run; commercial run report; project close-out',
   ],
-  M6: ['Oversee first commercial run', 'Commercial run report', 'Final project summary and close-out'],
 }
 
 export interface TimelineRowDef {
   id: string
   module: ModuleId
-  group: GroupId
   label: string
   openEnded?: boolean
 }
 
 export const TIMELINE_ROWS: TimelineRowDef[] = [
-  { id: 't-ideation', module: 'M1', group: 'ideation', label: 'Ideation and Feasibility Studies' },
-  { id: 't-proto', module: 'M1', group: 'ideation', label: 'Rapid Prototyping and Product Shortlisting' },
-  { id: 't-lit', module: 'M2', group: 'development', label: 'Literature Review, Market Analysis & BOM Development' },
-  { id: 't-rm', module: 'M3', group: 'development', label: 'Raw Material Procurement, Recipe Development and Sensory Trials' },
-  { id: 't-cm', module: 'M4', group: 'scaleup', label: 'Shortlist Contract Manufacturer & Pilot Trials' },
-  { id: 't-fssai', module: 'M4', group: 'scaleup', label: 'FSSAI Licensing, SOP Creation & Shelf Life testing' },
-  { id: 't-pm', module: 'M5', group: 'handover', label: 'Packing Materials and Vendor Finalization' },
-  { id: 't-ttd', module: 'M5', group: 'handover', label: 'Compliances and Technical Transfer Documentation' },
-  { id: 't-adv', module: 'M6', group: 'handover', label: 'Advisory Services for Commercial Batches', openEnded: true },
+  { id: 't-ideation', module: 'M1', label: 'Ideation & Feasibility Check' },
+  { id: 't-proto', module: 'M1', label: 'Rapid Prototyping & Shortlisting' },
+  { id: 't-research', module: 'M2', label: 'Benchmarking & BOM Development' },
+  { id: 't-recipe', module: 'M2', label: 'Recipe Development, Raw Material Standardisation & Tastings' },
+  { id: 't-cm', module: 'M3', label: 'Contract Manufacturer Selection & Pilot Trials' },
+  { id: 't-scale', module: 'M3', label: 'Scale-up Standardisation, SOPs & Shelf-life Testing' },
+  { id: 't-compliance', module: 'M4', label: 'FSSAI Licensing, Label & Packaging Compliance' },
+  { id: 't-transfer', module: 'M5', label: 'Technology Transfer & MRP Costing' },
+  { id: 't-commercial', module: 'M5', label: 'Commercial Run Support', openEnded: true },
 ]
 
 export type WeekRange = [number, number]
 export type TimelinePreset = Record<string, WeekRange>
 
 /**
- * Full-scope week ranges (all modules on). Kept on the longer side on purpose:
- * Easy 28 weeks, Medium 36 weeks, Hard 48 weeks. Removing a module shifts the
- * later rows earlier. Medium without ideation = 32 weeks.
+ * Full-scope week ranges (all modules on), kept on the longer side on purpose:
+ * Easy 28, Medium 36, Hard 48 weeks. Switching a module off shifts later rows earlier.
  */
 export const DEFAULT_PRESETS: Record<Complexity, TimelinePreset> = {
   easy: {
-    't-ideation': [1, 2], 't-proto': [2, 6], 't-lit': [4, 9], 't-rm': [7, 16],
-    't-cm': [13, 21], 't-fssai': [19, 26], 't-pm': [19, 25], 't-ttd': [25, 28],
+    't-ideation': [1, 2], 't-proto': [2, 6], 't-research': [4, 9], 't-recipe': [7, 16],
+    't-cm': [13, 21], 't-scale': [19, 26], 't-compliance': [19, 25], 't-transfer': [25, 28],
   },
   medium: {
-    't-ideation': [1, 3], 't-proto': [3, 8], 't-lit': [5, 11], 't-rm': [9, 20],
-    't-cm': [16, 27], 't-fssai': [24, 33], 't-pm': [24, 31], 't-ttd': [32, 36],
+    't-ideation': [1, 3], 't-proto': [3, 8], 't-research': [5, 11], 't-recipe': [9, 20],
+    't-cm': [16, 27], 't-scale': [24, 33], 't-compliance': [24, 31], 't-transfer': [32, 36],
   },
   hard: {
-    't-ideation': [1, 4], 't-proto': [4, 11], 't-lit': [6, 14], 't-rm': [12, 28],
-    't-cm': [24, 37], 't-fssai': [33, 43], 't-pm': [35, 43], 't-ttd': [43, 48],
+    't-ideation': [1, 4], 't-proto': [4, 11], 't-research': [6, 14], 't-recipe': [12, 28],
+    't-cm': [24, 37], 't-scale': [33, 43], 't-compliance': [35, 43], 't-transfer': [43, 48],
   },
 }
 
@@ -165,9 +200,9 @@ export const ASSUMPTIONS: AssumptionDef[] = [
   { id: 'a-indicative', tag: 'both', text: 'The deliverables and timelines set out above are indicative estimates only, do not constitute binding delivery dates, and are based on the assumption of timely and continued cooperation from the Client;' },
   { id: 'a-iterative', tag: 'both', text: 'The Client acknowledges and agrees that new product development, including formulation of food products, is inherently iterative, experimental, and uncertain in outcome;' },
   { id: 'a-noguarantee', tag: 'both', text: 'The Consultant makes no guarantee, warranty, or representation, express or implied, as to the commercial success, consumer acceptance, taste, shelf-stability, regulatory approval, or market performance of the Product;' },
-  { id: 'a-prototypes', tag: 'both', requires: 'M1', text: 'Rapid prototyping is limited to {prototypes} product prototypes;' },
-  { id: 'a-tastings', tag: 'both', requires: 'M3', text: 'The tabletop trials are limited to {tastings} tastings{perMonth}, every tasting after that will be billed additionally;' },
-  { id: 'a-trials', tag: 'both', requires: 'M4', text: 'The contract manufacturing trials are limited to {trials} trials{perMonth}, every trial after that will be billed additionally;' },
+  { id: 'a-prototypes', tag: 'both', requires: 'M1', text: 'Rapid prototyping is limited to {prototypes} prototypes, made for ideation only; no formulation IP is transferred at this stage;' },
+  { id: 'a-tastings', tag: 'both', requires: 'M2', text: 'The tabletop trials are limited to {tastings} tastings{perMonth}, every tasting after that will be billed additionally;' },
+  { id: 'a-trials', tag: 'both', requires: 'M3', text: 'The contract manufacturing trials are limited to {trials} trials{perMonth}, every trial after that will be billed additionally;' },
   { id: 'a-testing', tag: 'both', text: 'Nutritional Testing and Shelf Life Testing Fees are at actuals from the NABL certified lab, 3rd Party Testing fees for any additional testing are at actuals;' },
   { id: 'a-asl', tag: 'both', text: 'Accelerated Shelf Life testing requires approximately 8 days to mimic 1 month of shelf life, i.e a 6 month shelf life will require a 7 week testing period;' },
   { id: 'a-scope', tag: 'both', text: 'There will be no change to the scope of work set out above. If any work is performed outside the scope of work, then the same shall be highlighted upfront and any additional amount shall be charged on mutually acceptable terms;' },
@@ -187,31 +222,32 @@ export interface CostDef {
 }
 
 export const ADDITIONAL_COSTS: CostDef[] = [
-  { id: 'c-tasting', requires: 'M3', label: 'Additional Tasting (Over and above {tastings} table top tastings{perMonth})', priceKey: 'extraTasting', unit: 'per tasting per flavour' },
-  { id: 'c-flavour', label: 'Additional Products/Flavours (for table top prototyping)', priceKey: 'extraFlavour', unit: 'per flavour{perMonth}' },
-  { id: 'c-trial', requires: 'M4', label: 'Additional Contract Manufacturing Trials (Planning and Visitation Charges)', priceKey: 'extraTrial', unit: 'per trial' },
+  { id: 'c-tasting', requires: 'M2', label: 'Additional tasting (beyond {tastings} tabletop tastings{perMonth})', priceKey: 'extraTasting', unit: 'per tasting per flavour' },
+  { id: 'c-flavour', requires: 'M2', label: 'Additional product or flavour (tabletop development)', priceKey: 'extraFlavour', unit: 'per flavour{perMonth}' },
+  { id: 'c-trial', requires: 'M3', label: 'Additional pilot trial (planning and visit charges)', priceKey: 'extraTrial', unit: 'per trial' },
 ]
 
 export const FIXED_TEXT = {
-  intro: 'We understand that our scope of work in connection with the services shall comprise the following:',
-  feesMilestone: 'The fees for this project will be **INR {fee} + GST,** the target timeline to achieve all the above would be **{months}.**',
-  feesRetainer: 'The fees for this project will be **INR {fee} + GST per month,** the target timeline to achieve all the above would be **{months}.**',
-  tranchesIntro: 'The fee shall be payable in the following tranches:',
-  retainerPayable: 'The fee shall be payable at the start of every month.',
+  intro: 'Our scope of work will cover the following:',
+  addonsTitle: 'Additional Services',
+  feesMilestone: 'The fees for this project will be **INR {fee} + GST,** with a target timeline of **{months}.**',
+  feesRetainer: 'The fees for this project will be **INR {fee} + GST per month,** with a target timeline of **{months}.**',
+  tranchesIntro: 'The fee is payable in the following tranches:',
+  retainerPayable: 'The fee is payable at the start of every month.',
   retainerEstimate: 'Estimated total fees: INR {total} + GST ({monthsCount} months × INR {fee}).',
-  assumptionsMilestone: 'The above fixed fee has been offered by us subject to the assumptions that:',
-  assumptionsRetainer: 'The above Monthly Retainer Fee has been offered by us subject to the assumptions that:',
-  validity: '**Validity**: This quotation is valid for a period of {validityDays} days from the date of issuance.',
-  mouNote: 'Once the above scope of work and project brief is approved, we will send across an MOU which will detail all the terms and conditions regarding tastings, trials, consumer tasting, offsite visits and more.',
+  assumptionsMilestone: 'This fixed fee is offered on the following assumptions:',
+  assumptionsRetainer: 'This Monthly Retainer Fee is offered on the following assumptions:',
+  validity: '**Validity**: This quotation is valid for {validityDays} days from the date of issue.',
+  mouNote: 'Once you approve this scope, we will send an MOU setting out the full terms, including tastings, trials, consumer tastings and offsite visits.',
 }
 
-/** Typos fixed from the original Word templates (shown to Jay once). */
+/** Changes from the original Word templates (shown to Jay once). */
 export const TEMPLATE_FIXES = [
+  'Services reorganised into five phases: Ideation, Recipe Development, Scale-up, Compliance, Commercial Alignment',
+  'Scope items, timeline labels and fixed sentences rewritten to be shorter',
   '"Week Week 32" in the Master MOU timeline → "Week 32"',
-  'Stray full stop after "comprise the following:." removed',
-  '"outsidethe" → "outside the"',
-  'Clauses now start with a capital letter ("there will be…" → "There will be…")',
+  '"outsidethe" → "outside the"; clauses start with a capital letter',
   'Retainer quotes say "Monthly Retainer Fee" instead of "fixed fee"',
-  'Tasting/trial numbers in scope and assumptions now always match (one number drives both)',
+  'Tasting/trial numbers in scope and assumptions always match (one number drives both)',
   'Months in the Fees line are calculated from the timeline total, so they always agree',
 ]

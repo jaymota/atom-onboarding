@@ -38,9 +38,16 @@ The quote builder has **controls on the left** and the **quote on the right**. T
 Work down the left-hand sections:
 
 1. **Client & product**: who it's addressed to, the product, number of variants and the date.
-2. **Where does the project start?** Choose either *Ideation & Rapid Prototyping* (the client needs us to figure out the product) or *Literature Review* (they already know what they want). Phases renumber themselves.
+2. **Where does the project start?** Choose either *Ideation & Rapid Prototyping* (the client needs us to figure out the product) or *Recipe Development* (they already know what they want). Phases renumber themselves.
    - Tick **“Rapid prototyping is the main service”** for 10 prototypes instead of 3.
-3. **Service modules**: switch modules on or off. Click **what's included** to see the checklist tasks behind each one (only you see this).
+3. **Services**: each of the five core services is one phase of the quote:
+   - Ideation & Rapid Prototyping
+   - Recipe Development & Standardisation
+   - Contract Manufacturing & Scale-up
+   - Compliance & Licensing
+   - Commercial Alignment
+
+   Switch them on or off. Click **what's included** to see the checklist tasks behind each one (only you see this). Below them, **Other services** adds standalone work under an “Additional Services” heading: FSSAI Licensing, Shelf-life Extension, Advisory Services, Contract Manufacturer Alignment and Product Approvals. Their timeline row says “As agreed” unless you enter weeks in section 6.
 4. **Complexity & model**: Easy, Medium or Hard fills in the timeline. Milestone or Retainer changes the wording.
    - Tastings and pilot trials default to **3 and 3** for projects, and **2 and 2 per month** for retainers. Change the numbers if needed, and the wording updates everywhere.
 5. **Fees**: the fee starts as a grey **suggestion**. Change it if you like, then tick **“I’ve confirmed this fee”**. You can't approve without this.
@@ -76,6 +83,10 @@ You can't share a quote that isn't approved, so a draft can never go out by mist
 They open the link and see the quote, with a **Download PDF** button and two choices:
 
 - **Accept quote**: they type their name and tick a box. You get an email 🎉 and a **draft MOU is created automatically**.
+  - **Straight away, they're asked for their company & billing details**: legal name, address, GSTIN, PAN, signatory and billing contact. This is shown on the page, and emailed to them too.
+  - Their status becomes **Awaiting company details**.
+  - When they submit, you get an email, the MOU is filled in, and the status becomes **MOU draft**.
+  - (The first enquiry form deliberately doesn't ask for any of this.)
 - **Request changes**: they write what they want changed. You get an email. Open the quote: their comment is shown at the top. Edit, **Approve**, then **Share** again. **The same link shows the new version.**
 
 You also get an email the **first time they open** the quote. Links stop working after the validity period (30 days by default).

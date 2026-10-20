@@ -184,13 +184,13 @@ function PinScreen({ initial, notice, onSignedIn }: {
               aria-label="PIN"
               value={pin}
               onChange={(e) => setPin(digits(e.target.value))}
-              className="mt-4 w-full rounded-md border border-neutral-300 px-3 py-3 text-center text-2xl tracking-[0.5em] outline-none focus:border-atom-red"
+              className="mt-4 w-full rounded-md border border-neutral-300 px-3 py-3 text-center text-2xl tracking-[0.5em] outline-none focus:border-atom-teal"
             />
             <Keypad value={pin} onChange={setPin} />
             {info && <div className="mt-4 text-left"><Alert tone="info">{info}</Alert></div>}
             {error && <div className="mt-4 text-left"><Alert tone="error">{error}</Alert></div>}
             <Button type="submit" size="lg" className="mt-5 w-full" busy={busy} disabled={pin.length < 6}>Unlock</Button>
-            <button type="button" onClick={() => { setScreen('forgot'); setError(''); setInfo(''); setCodeSent(false) }} className="mt-4 text-sm text-neutral-500 hover:text-atom-red">
+            <button type="button" onClick={() => { setScreen('forgot'); setError(''); setInfo(''); setCodeSent(false) }} className="mt-4 text-sm text-neutral-500 hover:text-atom-teal">
               Forgot PIN?
             </button>
           </form>
@@ -225,10 +225,10 @@ function PinScreen({ initial, notice, onSignedIn }: {
                 <CodeInput refEl={inputRef} value={code} onChange={setCode} />
                 <label className="mt-4 block text-sm font-medium">New PIN (6–12 digits)</label>
                 <input type="password" inputMode="numeric" autoComplete="new-password" value={pin} onChange={(e) => setPin(digits(e.target.value))}
-                  className="mt-1 w-full rounded-md border border-neutral-300 px-3 py-2 text-center text-xl tracking-[0.4em] outline-none focus:border-atom-red" />
+                  className="mt-1 w-full rounded-md border border-neutral-300 px-3 py-2 text-center text-xl tracking-[0.4em] outline-none focus:border-atom-teal" />
                 <label className="mt-3 block text-sm font-medium">Type it again</label>
                 <input type="password" inputMode="numeric" autoComplete="new-password" value={pin2} onChange={(e) => setPin2(digits(e.target.value))}
-                  className="mt-1 w-full rounded-md border border-neutral-300 px-3 py-2 text-center text-xl tracking-[0.4em] outline-none focus:border-atom-red" />
+                  className="mt-1 w-full rounded-md border border-neutral-300 px-3 py-2 text-center text-xl tracking-[0.4em] outline-none focus:border-atom-teal" />
                 <p className="mt-2 text-xs text-neutral-500">Avoid easy PINs like 123456, 111111 or your birthday.</p>
                 <Button type="submit" size="lg" className="mt-5 w-full" busy={busy} disabled={code.length !== 6 || pin.length < 6 || pin2.length < 6}>
                   Save PIN & unlock
@@ -237,7 +237,7 @@ function PinScreen({ initial, notice, onSignedIn }: {
             )}
             {error && <div className="mt-4"><Alert tone="error">{error}</Alert></div>}
             {screen === 'forgot' && (
-              <button onClick={() => { setScreen('pin'); setError(''); setInfo('') }} className="mt-4 block w-full text-center text-sm text-neutral-500 hover:text-atom-red">
+              <button onClick={() => { setScreen('pin'); setError(''); setInfo('') }} className="mt-4 block w-full text-center text-sm text-neutral-500 hover:text-atom-teal">
                 ← Back to PIN
               </button>
             )}
@@ -254,7 +254,7 @@ function PinDots({ value }: { value: string }) {
   return (
     <div className="mt-5 flex justify-center gap-2" aria-hidden>
       {Array.from({ length: n }, (_, i) => (
-        <span key={i} className={`h-3 w-3 rounded-full ${i < value.length ? 'bg-atom-red' : 'bg-neutral-200'}`} />
+        <span key={i} className={`h-3 w-3 rounded-full ${i < value.length ? 'bg-atom-teal' : 'bg-neutral-200'}`} />
       ))}
     </div>
   )
@@ -288,7 +288,7 @@ function CodeInput({ value, onChange, refEl }: { value: string; onChange: (v: st
         autoComplete="one-time-code"
         value={value}
         onChange={(e) => onChange(e.target.value.replace(/\D/g, '').slice(0, 6))}
-        className="mt-1 w-full rounded-md border border-neutral-300 px-3 py-2 text-center text-2xl tracking-[0.5em] outline-none focus:border-atom-red"
+        className="mt-1 w-full rounded-md border border-neutral-300 px-3 py-2 text-center text-2xl tracking-[0.5em] outline-none focus:border-atom-teal"
       />
     </>
   )

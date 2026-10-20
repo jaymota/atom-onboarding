@@ -1,73 +1,101 @@
 import { useEffect, useState } from 'react'
 import { useParams } from 'react-router-dom'
+import { type Answers, DETAILS_STEP, isVisible, validateFields } from '../../supabase/functions/_shared/engine/intake.ts'
 import { callFn } from '../lib/supabase'
-import { Alert, Button, Label, PageSpinner, TextInput } from '../components/ui'
+import { Alert, Button, PageSpinner } from '../components/ui'
+import { FieldInput } from './IntakeForm'
 import { PublicShell } from './PublicShell'
 
-interface DetailsResponse {
-  brand: string
-  fields: { key: string; label: string; value: string }[]
-}
-
-/** "Complete your details" page for the MOU. */
+/** Company & billing details, asked only after the client accepts the quote. */
 export default function DetailsForm() {
   const { token = '' } = useParams()
-  const [data, setData] = useState<DetailsResponse | null>(null)
-  const [values, setValues] = useState<Record<string, string>>({})
+  const [brand, setBrand] = useState('')
+  const [answers, setAnswers] = useState<Answers | null>(null)
+  const [errors, setErrors] = useState<Record<string, string>>({})
+  const [touched, setTouched] = useState<Record<string, boolean>>({})
+  const [loadError, setLoadError] = useState('')
   const [error, setError] = useState('')
   const [busy, setBusy] = useState(false)
   const [done, setDone] = useState(false)
 
   useEffect(() => {
-    callFn<DetailsResponse>('public', { action: 'get_details', token })
+    callFn<{ brand: string; answers: Answers }>('public', { action: 'get_details', token })
       .then((d) => {
-        setData(d)
-        setValues(Object.fromEntries(d.fields.map((f) => [f.key, f.value])))
+        setBrand(d.brand)
+        setAnswers(d.answers)
       })
-      .catch((e) => setError(e.message))
+      .catch((e) => setLoadError(e.message))
   }, [token])
 
+  useEffect(() => {
+    if (!answers) return
+    const all = validateFields(DETAILS_STEP.fields, answers)
+    setErrors(Object.fromEntries(Object.entries(all).filter(([k]) => touched[k])))
+  }, [answers, touched])
+
+  const set = (id: string, v: Answers[string]) => {
+    setAnswers((a) => ({ ...(a ?? {}), [id]: v }))
+    setTouched((t) => ({ ...t, [id]: true }))
+  }
+
   const submit = async () => {
+    if (!answers) return
+    const errs = validateFields(DETAILS_STEP.fields, answers)
+    setTouched(Object.fromEntries(DETAILS_STEP.fields.map((f) => [f.id, true])))
+    setErrors(errs)
+    if (Object.keys(errs).length) {
+      const first = DETAILS_STEP.fields.find((f) => errs[f.id])
+      if (first) document.getElementById(`f-${first.id}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+      return
+    }
     setBusy(true)
     setError('')
     try {
-      await callFn('public', { action: 'submit_details', token, details: values })
+      await callFn('public', { action: 'submit_details', token, answers })
       setDone(true)
+      window.scrollTo({ top: 0, behavior: 'smooth' })
     } catch (e) {
-      setError((e as Error).message)
+      const err = e as Error & { data?: { errors?: Record<string, string> } }
+      setError(err.message)
+      if (err.data?.errors) setErrors(err.data.errors)
     } finally {
       setBusy(false)
     }
   }
 
-  if (!data && !error) return <PublicShell><PageSpinner /></PublicShell>
+  if (!answers && !loadError) return <PublicShell><PageSpinner /></PublicShell>
 
   return (
     <PublicShell>
-      <div className="mx-auto max-w-xl py-10">
+      <div className="mx-auto max-w-2xl py-8 sm:py-12">
         {done ? (
-          <Alert tone="success">Thank you! Your details have been saved. We'll send your agreement for signature shortly.</Alert>
-        ) : !data ? (
-          <Alert tone="error">{error}</Alert>
+          <div className="py-10 text-center">
+            <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-emerald-100 text-2xl">✓</div>
+            <h1 className="mt-6 text-2xl font-semibold">Thank you!</h1>
+            <p className="mt-3 text-neutral-600">We have your company details. We'll send your agreement (MOU) for e-signature shortly.</p>
+          </div>
+        ) : !answers ? (
+          <Alert tone="error">{loadError}</Alert>
         ) : (
-          <section className="rounded-lg border border-neutral-200 bg-white p-6">
-            <h1 className="text-xl font-semibold">Company details for your agreement</h1>
-            <div className="mt-3 rounded-md border-l-4 border-atom-red bg-atom-red/5 px-4 py-3 text-sm">
-              <b>Important:</b> please enter these exactly as they appear on your registration documents. They will be used on your official agreement (MOU) and tax invoices.
-            </div>
-            <div className="mt-6 space-y-4">
-              {data.fields.map((f) => (
-                <div key={f.key}>
-                  <Label required>{f.label}</Label>
-                  <TextInput value={values[f.key] ?? ''} onChange={(e) => setValues({ ...values, [f.key]: e.target.value })} />
-                </div>
-              ))}
-            </div>
-            {error && <div className="mt-4"><Alert tone="error">{error}</Alert></div>}
-            <div className="mt-6 flex justify-end">
-              <Button onClick={submit} busy={busy}>Save details</Button>
-            </div>
-          </section>
+          <>
+            <p className="text-sm font-medium uppercase tracking-[0.25em] text-atom-teal">Step 2 of 3 · {brand}</p>
+            <h1 className="mt-2 text-2xl font-semibold">{DETAILS_STEP.title}</h1>
+            <p className="mt-2 text-neutral-600">Quote accepted ✓ → <b>Company details</b> → Sign the agreement</p>
+            <section className="mt-6 rounded-lg border border-neutral-200 bg-white p-5 sm:p-8">
+              <div className="rounded-md border-l-4 border-atom-teal bg-atom-aqua/40 px-4 py-3 text-sm text-neutral-800">
+                <b>Important:</b> {DETAILS_STEP.intro}
+              </div>
+              <div className="mt-6 grid grid-cols-1 gap-x-4 gap-y-5 sm:grid-cols-2">
+                {DETAILS_STEP.fields.filter((f) => isVisible(f, answers)).map((f) => (
+                  <FieldInput key={f.id} field={f} answers={answers} error={errors[f.id]} onChange={set} />
+                ))}
+              </div>
+              {error && <div className="mt-6"><Alert tone="error">{error}</Alert></div>}
+              <div className="mt-8 flex justify-end">
+                <Button size="lg" onClick={submit} busy={busy}>Submit details</Button>
+              </div>
+            </section>
+          </>
         )}
       </div>
     </PublicShell>

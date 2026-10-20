@@ -77,7 +77,7 @@ export function QuotePreview({ doc, company, editing }: { doc: QuoteDoc; company
       <H>Deliverables and timelines:</H>
       <table className="w-full border-collapse text-[13px]">
         <thead>
-          <tr className="bg-atom-red/10">
+          <tr className="bg-atom-teal/10">
             <Th w="12%">Sr.No.</Th><Th w="58%">Actionables</Th><Th w="30%">Timeline</Th>
           </tr>
         </thead>
@@ -102,7 +102,7 @@ export function QuotePreview({ doc, company, editing }: { doc: QuoteDoc; company
           <H>Potential Additional Costs:</H>
           <table className="w-full border-collapse text-[13px]">
             <thead>
-              <tr className="bg-atom-red/10">
+              <tr className="bg-atom-teal/10">
                 <Th w="12%">Sr. No.</Th><Th w="58%">Areas of Work</Th><Th w="30%">Fees / Costs</Th>
               </tr>
             </thead>
@@ -161,7 +161,7 @@ export function E({ k, text, className }: { k: string; text: string; className?:
 
 export function Letterhead({ company }: { company: CompanySettings }) {
   return (
-    <header className="flex flex-col gap-4 border-b-2 border-atom-red pb-4 font-sans sm:flex-row sm:items-start sm:justify-between">
+    <header className="flex flex-col gap-4 border-b-2 border-atom-teal pb-4 font-sans sm:flex-row sm:items-start sm:justify-between">
       <img src="/atom-logo.png" alt="Atom Consultancy" className="w-40" />
       <div className="text-xs leading-snug text-neutral-700 sm:max-w-[300px] sm:text-right">
         <p>{company.address}</p>
@@ -197,7 +197,7 @@ export function Table({ headers, widths, rows, total }: { headers: string[]; wid
   return (
     <table className="mt-2 w-full border-collapse text-[13px]">
       <thead>
-        <tr className="bg-atom-red/10">{headers.map((h, i) => <Th key={h} w={widths[i]}>{h}</Th>)}</tr>
+        <tr className="bg-atom-teal/10">{headers.map((h, i) => <Th key={h} w={widths[i]}>{h}</Th>)}</tr>
       </thead>
       <tbody>
         {rows.map((r, i) => <tr key={i}>{r.map((c, j) => <Td key={j}>{c}</Td>)}</tr>)}

@@ -33,7 +33,7 @@ export function AdminLayout() {
 
   return (
     <div className="min-h-svh bg-neutral-50">
-      <div className="h-1 bg-gradient-to-r from-atom-red to-atom-yellow" />
+      <div className="h-1 bg-gradient-to-r from-atom-teal to-atom-green" />
       <header className="sticky top-0 z-30 border-b border-neutral-200 bg-white/95 backdrop-blur print:hidden">
         <div className="mx-auto flex max-w-[1500px] items-center gap-2 px-4 py-2">
           <img src="/atom-logo.png" alt="Atom" className="mr-3 w-20" />

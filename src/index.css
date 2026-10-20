@@ -2,8 +2,10 @@
 
 /* Atom Consultancy brand, taken from atomconsulting.in */
 @theme {
-  --color-atom-red: #df2c21;
-  --color-atom-yellow: #ffbb40;
+  --color-atom-teal: #1f8a84;
+  --color-atom-aqua: #d1eff1;
+  --color-atom-green: #5f6f4b;
+  --color-atom-cream: #fff9f3;
   --color-atom-ink: #111111;
   --font-sans: "Prompt", ui-sans-serif, system-ui, sans-serif;
 }
