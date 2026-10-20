@@ -285,7 +285,7 @@ export function buildMouDoc(input: MouInput, settings: Settings): MouDoc {
 
   return {
     title: 'MEMORANDUM OF UNDERSTANDING',
-    effectiveDate: input.effectiveDate ? formatDate(input.effectiveDate) : '',
+    effectiveDate: input.effectiveDate ? formatDate(input.effectiveDate) : 'Date of the last signature on this MOU',
     place: input.place || 'Mumbai, Maharashtra',
     parties,
     sections,

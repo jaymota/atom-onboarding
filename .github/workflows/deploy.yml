@@ -25,8 +25,12 @@ jobs:
           node-version: 24
           cache: npm
       - run: npm ci
+      - run: npx vitest run
       - run: npm run build
-      # Lets page refreshes on deep links work on GitHub Pages
+        env:
+          VITE_SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          VITE_SUPABASE_PUBLISHABLE_KEY: ${{ secrets.SUPABASE_PUBLISHABLE_KEY }}
+      # Lets page refreshes and /admin work on GitHub Pages
       - run: cp dist/index.html dist/404.html
       - uses: actions/upload-pages-artifact@v3
         with:
