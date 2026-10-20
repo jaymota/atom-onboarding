@@ -1,0 +1,13 @@
+@import "tailwindcss";
+
+/* Atom Consultancy brand, taken from atomconsulting.in */
+@theme {
+  --color-atom-red: #df2c21;
+  --color-atom-yellow: #ffbb40;
+  --color-atom-ink: #111111;
+  --font-sans: "Prompt", ui-sans-serif, system-ui, sans-serif;
+}
+
+body {
+  @apply bg-white text-atom-ink antialiased;
+}

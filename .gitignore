@@ -1,0 +1,14 @@
+# Private client documents - never upload
+reference/
+
+# Secrets
+.env
+.env.*
+!.env.example
+
+# Build output and tools
+node_modules/
+dist/
+.DS_Store
+.supabase/
+.claude/
