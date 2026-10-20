@@ -1,7 +1,7 @@
 import { Document, Page, Text, View } from '@react-pdf/renderer'
 import type { QuoteDoc } from '../../supabase/functions/_shared/engine/quote.ts'
 import type { CompanySettings } from '../../supabase/functions/_shared/engine/settings.ts'
-import { Footer, Item, Letterhead, PdfTable, Rich, pdfSafe, s } from './common'
+import { Footer, Item, Letterhead, PdfTable, Rich, TEAL, pdfSafe, s } from './common'
 
 export function QuotePdf({ doc, company }: { doc: QuoteDoc; company: CompanySettings }) {
   return (
@@ -22,7 +22,7 @@ export function QuotePdf({ doc, company }: { doc: QuoteDoc; company: CompanySett
         <Rich text={doc.intro} style={s.p} />
         {doc.phases.map((ph) => (
           <View key={ph.group}>
-            {doc.showPhaseHeadings ? <Text style={{ marginTop: 8, marginBottom: 4 }} minPresenceAhead={40}>{ph.title}</Text> : null}
+            {doc.showPhaseHeadings ? <Text style={[s.bold, { marginTop: 8, marginBottom: 4, color: TEAL }]} minPresenceAhead={40}>{ph.title}</Text> : null}
             {ph.items.map((it) => <Item key={it.id} label={`${it.n}.`} text={it.text} indent={14} />)}
           </View>
         ))}

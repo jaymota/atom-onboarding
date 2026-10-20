@@ -27,7 +27,7 @@ export function QuotePreview({ doc, company, editing }: { doc: QuoteDoc; company
       <p><E k="intro" text={doc.intro} /></p>
       {doc.phases.map((ph) => (
         <div key={ph.group} className="mt-3">
-          {doc.showPhaseHeadings && <p className="mt-4 mb-1">{ph.title}</p>}
+          {doc.showPhaseHeadings && <p className="mt-4 mb-1 font-bold text-atom-teal">{ph.title}</p>}
           <ol className="ml-6 space-y-1">
             {ph.items.map((it) => (
               <li key={it.id} className="group relative flex gap-2">
