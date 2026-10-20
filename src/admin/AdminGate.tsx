@@ -51,7 +51,8 @@ export function AdminGate({ children }: { children: ReactNode }) {
         markActivity()
         setScreen('in')
       } else {
-        await supabase.auth.signOut({ scope: 'local' })
+        const { data } = await supabase.auth.getSession()
+        if (data.session) await supabase.auth.signOut({ scope: 'local' })
         setScreen('pin')
       }
     })()
