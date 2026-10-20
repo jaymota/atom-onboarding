@@ -84,7 +84,7 @@ export function QuotePdf({ doc, company }: { doc: QuoteDoc; company: CompanySett
           </View>
         ) : null}
 
-        <Text style={s.h} minPresenceAhead={60}>Fee Assumptions</Text>
+        <Text style={s.h} minPresenceAhead={60}>Terms & Assumptions</Text>
         <Rich text={doc.assumptionsIntro} style={{ marginBottom: 6 }} />
         {doc.assumptions.map((a) => <Item key={a.id} label={`${a.roman}.`} text={a.text} indent={8} labelWidth={30} />)}
 

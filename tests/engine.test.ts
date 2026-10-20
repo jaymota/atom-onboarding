@@ -37,7 +37,8 @@ describe('Indian formatting', () => {
   })
 })
 
-const ALL = { M1: true, M2: true, M3: true, M4: true, M5: true }
+const ALL = { M1: true, M2: true, M3: true, M4: true, M5: true, M6: true }
+const items = (d: ReturnType<typeof buildQuoteDoc>) => d.phases.flatMap((p) => p.items)
 
 describe('Test case 1: El Chico (milestone, no ideation, 3 variants, ₹9,00,000)', () => {
   const input = newQuoteInput(settings, {
@@ -46,21 +47,27 @@ describe('Test case 1: El Chico (milestone, no ideation, 3 variants, ₹9,00,000
     complexity: 'medium', model: 'milestone', counts: { prototypes: 3, tastings: 3, trials: 2 }, fee: 900000, feeConfirmed: true,
   })
   const doc = buildQuoteDoc(input, settings)
-  it('one named phase per service, numbered from 1, items numbered continuously', () => {
+  it('one named phase per service, starting with Feasibility', () => {
     expect(doc.phases.map((p) => p.title)).toEqual([
-      'Phase 1: Recipe Development & Standardisation', 'Phase 2: Contract Manufacturing & Scale-up',
-      'Phase 3: Compliance & Licensing', 'Phase 4: Commercial Alignment',
+      'Phase 1: Feasibility Study', 'Phase 2: Recipe Development & Standardisation', 'Phase 3: Contract Manufacturing & Scale-up',
+      'Phase 4: Compliance & Licensing', 'Phase 5: Commercial Alignment',
     ])
-    expect(doc.phases.flatMap((p) => p.items).length).toBe(16)
-    expect(doc.phases[1].items[0].n).toBe(7)
+    expect(items(doc).length).toBe(20)
+    expect(doc.phases[1].items[0].n).toBe(6)
+  })
+  it('does not repeat benchmark research, and re-engages feasibility manufacturers', () => {
+    const all = items(doc).map((i) => i.text).join(' ')
+    expect(all.match(/benchmark products for ingredients/g)?.length).toBe(1)
+    expect(items(doc).find((i) => i.id === 'm3-0')).toBeUndefined()
+    expect(items(doc).find((i) => i.id === 'm4-1')!.text).toContain('re-engage those from the feasibility check')
   })
   it('subject lists the services', () => {
-    expect(doc.subject).toBe('Quotation for recipe development, scale-up, compliance and commercialisation of 3 sugar free sweet flavoured popped chips')
+    expect(doc.subject).toBe('Quotation for feasibility, recipe development, scale-up, compliance and commercialisation of 3 sugar free sweet flavoured popped chips')
   })
   it('shifts the timeline earlier without gaps', () => {
-    expect(doc.timeline.rows[0]).toMatchObject({ label: 'Phase 1 – Benchmarking & BOM Development', period: 'Week 1 - Week 7' })
-    expect(doc.timeline.totalWeeks).toBe(32)
-    expect(doc.timeline.total).toBe('32 Weeks = 7 - 8 Months')
+    expect(doc.timeline.rows[0]).toMatchObject({ label: 'Phase 1 – Feasibility Study', period: 'Week 1 - Week 5' })
+    expect(doc.timeline.totalWeeks).toBe(33)
+    expect(doc.timeline.total).toBe('33 Weeks = 7 - 8 Months')
   })
   it('fees, tranches and GST', () => {
     expect(doc.feesText).toBe('The fees for this project will be **INR 9,00,000 + GST,** with a target timeline of **7 - 8 months.**')
@@ -71,13 +78,23 @@ describe('Test case 1: El Chico (milestone, no ideation, 3 variants, ₹9,00,000
     expect(doc.gstSummary).toEqual({ fee: '₹9,00,000', gstLabel: 'GST @ 18%', gst: '₹1,62,000', total: '₹10,62,000' })
     expect(doc.warnings).toEqual([])
   })
-  it('assumptions match the counts and skip prototypes', () => {
+  it('terms match the counts, include milestone payment terms and skip prototypes', () => {
     const texts = doc.assumptions.map((a) => a.text)
-    expect(texts).toContain('The tabletop trials are limited to 3 tastings, every tasting after that will be billed additionally;')
-    expect(texts).toContain('The contract manufacturing trials are limited to 2 trials, every trial after that will be billed additionally;')
-    expect(texts.some((x) => x.includes('Rapid prototyping'))).toBe(false)
-    expect(doc.assumptions[1].roman).toBe('ii')
+    expect(texts).toContain('**Tastings:** 3 tabletop tastings are included. Further tastings are charged as listed above.')
+    expect(texts).toContain('**Pilot trials:** 2 pilot trials are included. Further trials are charged as listed above.')
+    expect(texts.some((x) => x.includes('Prototypes'))).toBe(false)
+    expect(doc.assumptions.map((a) => a.id)).toContain('a-termination')
+    expect(doc.assumptions.map((a) => a.id)).not.toContain('a-termination-r')
     expect(doc.costs!.rows[0].value).toBe('Rs. 25,000 per tasting per flavour')
+  })
+})
+
+describe('Without a Feasibility phase', () => {
+  const doc = buildQuoteDoc(newQuoteInput(settings, { productDescription: 'chips', variants: 1, modules: { ...ALL, M1: false, M2: false }, fee: 1, feeConfirmed: true }), settings)
+  it('recipe development starts with the benchmark review instead', () => {
+    expect(doc.phases[0].title).toBe('Phase 1: Recipe Development & Standardisation')
+    expect(doc.phases[0].items[0].id).toBe('m3-0')
+    expect(items(doc).find((i) => i.id === 'm4-1')!.text).toMatch(/^Identify and shortlist/)
   })
 })
 
@@ -87,18 +104,18 @@ describe('Test case 2: Gut health (milestone, ideation, 2 products, ₹10,00,000
     complexity: 'medium', model: 'milestone', counts: { prototypes: 4, tastings: 4, trials: 3 }, fee: 1000000, feeConfirmed: true,
   })
   const doc = buildQuoteDoc(input, settings)
-  it('has 5 phases with ideation first', () => {
-    expect(doc.phases.length).toBe(5)
+  it('has 6 phases with ideation first', () => {
+    expect(doc.phases.length).toBe(6)
     expect(doc.phases[0].title).toBe('Phase 1: Ideation & Rapid Prototyping')
     expect(doc.phases[0].items[1].text).toBe('Create up to 4 rapid prototypes to explore product directions.')
-    expect(doc.subject).toContain('Quotation for ideation, recipe development')
+    expect(doc.subject).toContain('Quotation for ideation, feasibility, recipe development')
   })
   it('uses Second Tasting with 4 tastings', () => {
     expect(doc.tranches!.rows[1].name).toBe('Second Tasting')
   })
-  it('includes the prototype clause and full timeline', () => {
-    expect(doc.assumptions.map((a) => a.text)).toContain('Rapid prototyping is limited to 4 prototypes, made for ideation only; no formulation IP is transferred at this stage;')
-    expect(doc.timeline.total).toBe('36 Weeks = 8 - 9 Months')
+  it('includes the prototype term and full timeline', () => {
+    expect(doc.assumptions.map((a) => a.text)).toContain('**Prototypes:** Up to 4 rapid prototypes are included. They are for ideation only; no formulation IP is transferred at this stage.')
+    expect(doc.timeline.total).toBe('39 Weeks = 9 Months')
     expect(doc.gstSummary!.total).toBe('₹11,80,000')
   })
 })
@@ -111,19 +128,19 @@ describe('Test case 3: Wafer snacks (retainer ₹1,50,000/month, all services)',
   const doc = buildQuoteDoc(input, settings)
   it('uses per-month wording', () => {
     expect(doc.feesText).toContain('INR 1,50,000 + GST per month')
-    expect(doc.phases.flatMap((p) => p.items).find((i) => i.id === 'm2-5')!.text).toContain('2 tasting sessions per month')
-    expect(doc.assumptionsIntro).toContain('Monthly Retainer Fee')
+    expect(items(doc).find((i) => i.id === 'm3-4')!.text).toContain('2 tasting sessions per month')
     expect(doc.tranches).toBeUndefined()
     expect(doc.retainerEstimate).toBe('Estimated total fees: INR 13,50,000 + GST (9 months × INR 1,50,000).')
   })
   it('ends with the open-ended commercial run row', () => {
     const last = doc.timeline.rows.at(-1)!
-    expect(last.period).toBe('Week 36 +')
-    expect(last.label).toBe('Phase 5 – Commercial Run Support')
+    expect(last.period).toBe('Week 39 +')
+    expect(last.label).toBe('Phase 6 – Commercial Run Support')
   })
-  it('ticks retainer-only clauses', () => {
+  it('uses retainer payment and termination terms', () => {
     const ids = doc.assumptions.map((a) => a.id)
-    expect(ids).toContain('a-rentals')
+    expect(ids).toContain('a-pay-retainer')
+    expect(ids).toContain('a-termination-r')
     expect(ids).not.toContain('a-termination')
   })
 })
@@ -131,7 +148,7 @@ describe('Test case 3: Wafer snacks (retainer ₹1,50,000/month, all services)',
 describe('Standalone services', () => {
   const input = newQuoteInput(settings, {
     clientNames: 'X', productDescription: 'protein bars', variants: 2,
-    modules: { M1: false, M2: false, M3: false, M4: false, M5: false }, addOns: ['x-fssai', 'x-approval'], fee: 100000, feeConfirmed: true,
+    modules: { M1: false, M2: false, M3: false, M4: false, M5: false, M6: false }, addOns: ['x-fssai', 'x-approval'], fee: 100000, feeConfirmed: true,
   })
   const doc = buildQuoteDoc(input, settings)
   it('lists them under Additional Services with an "As agreed" timeline', () => {
@@ -139,5 +156,21 @@ describe('Standalone services', () => {
     expect(doc.phases[0].items[0].text).toMatch(/^\*\*FSSAI Licensing:\*\*/)
     expect(doc.timeline.rows.map((r) => r.period)).toEqual(['As agreed', 'As agreed'])
     expect(doc.subject).toBe('Quotation for FSSAI licensing and product approvals of 2 protein bars')
+  })
+})
+
+describe('MOU', () => {
+  it('does not repeat payment/termination terms in its assumptions clause', async () => {
+    const { buildMouDoc } = await import('../supabase/functions/_shared/engine/mou.ts')
+    const { EMPTY_CLIENT } = await import('../supabase/functions/_shared/engine/intake.ts')
+    const quote = newQuoteInput(settings, { productDescription: 'chips', variants: 3, fee: 900000, feeConfirmed: true })
+    const mou = buildMouDoc({ quote, client: EMPTY_CLIENT, texts: {}, effectiveDate: null, place: 'Mumbai' }, settings)
+    const sec = mou.sections.find((s) => s.key === 'assumptions')!
+    const list = sec.blocks.find((b) => b.type === 'items')!
+    const texts = list.type === 'items' ? list.items.map((i) => i.text).join(' ') : ''
+    expect(texts).toContain('**Tastings:**')
+    expect(texts).not.toContain('**Payment:**')
+    expect(texts).not.toContain('**Termination:**')
+    expect(mou.sections.find((s) => s.key === 'background')!.blocks[0]).toMatchObject({ type: 'p' })
   })
 })

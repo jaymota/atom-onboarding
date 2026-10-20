@@ -221,7 +221,7 @@ function WordingTab({ draft, setDraft }: TabProps) {
   const groups: { title: string; items: { key: string; label: string; text: string }[] }[] = [
     { title: 'Scope of work items', items: SCOPE_ITEMS.map((s) => ({ key: `item:${s.id}`, label: `${s.module} · ${s.id}`, text: s.text })) },
     { title: 'Other services (scope lines)', items: ADD_ONS.map((a) => ({ key: `item:${a.id}`, label: a.name, text: `**${a.name}:** ${a.scope}` })) },
-    { title: 'Fee assumptions', items: ASSUMPTIONS.map((a) => ({ key: `assume:${a.id}`, label: `${a.tag}${a.requires ? ` · needs ${a.requires}` : ''}`, text: a.text })) },
+    { title: 'Terms & assumptions', items: ASSUMPTIONS.map((a) => ({ key: `assume:${a.id}`, label: `${a.topic} · ${a.tag}${a.requires ? ` · needs ${a.requires}` : ''}`, text: `**${a.topic}:** ${a.text}` })) },
     { title: 'Timeline labels', items: TIMELINE_ROWS.map((r) => ({ key: `tl:${r.id}`, label: r.module, text: r.label })) },
     { title: 'Additional cost rows', items: ADDITIONAL_COSTS.map((c) => ({ key: `cost:${c.id}`, label: c.id, text: c.label })) },
     {

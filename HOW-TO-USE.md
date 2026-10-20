@@ -38,10 +38,16 @@ The quote builder has **controls on the left** and the **quote on the right**. T
 Work down the left-hand sections:
 
 1. **Client & product**: who it's addressed to, the product, number of variants and the date.
-2. **Where does the project start?** Choose either *Ideation & Rapid Prototyping* (the client needs us to figure out the product) or *Recipe Development* (they already know what they want). Phases renumber themselves.
+2. **Where does the project start?** Choose one:
+   - *Ideation & Rapid Prototyping*: the client needs us to figure out the product.
+   - *Feasibility Study*: they know the product; we check it can be made, sold and labelled as intended.
+   - *Recipe Development*: they've done the research already.
+
+   Phases renumber themselves.
    - Tick **“Rapid prototyping is the main service”** for 10 prototypes instead of 3.
-3. **Services**: each of the five core services is one phase of the quote:
+3. **Services**: each of the six core services is one phase of the quote:
    - Ideation & Rapid Prototyping
+   - Feasibility Study (competitive, literature and compliance review, plus a quick check with 3–4 manufacturers)
    - Recipe Development & Standardisation
    - Contract Manufacturing & Scale-up
    - Compliance & Licensing
@@ -55,7 +61,7 @@ Work down the left-hand sections:
 6. **Timeline**: change any week number if you need to.
 7. **Scope items**: add your own items, or bring back removed ones.
 8. **Potential additional costs**: switch rows on or off, or add your own.
-9. **Fee assumptions**: tick or untick clauses, or add your own.
+9. **Terms & assumptions**: short client-friendly terms covering payment, termination, what's included, costs at actuals and handover. The right ones are pre-ticked for milestone or retainer. Tick or untick them, or add your own. (Payment and termination terms aren't repeated in the MOU's assumptions clause, because the MOU has its own full clauses for them.)
 
 **To change any wording**, click it in the quote on the right. A small box opens: edit the text, then press **Save**. **Reset to template wording** brings back the original. Use `**double stars**` to make words bold.
 

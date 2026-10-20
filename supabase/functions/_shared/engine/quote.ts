@@ -105,7 +105,7 @@ export interface QuoteDoc {
   timeline: { rows: DocTimelineRow[]; total: string; totalWeeks: number; monthsText: string }
   costs?: { rows: { id: string; n: number; labelKey: string; valueKey: string; label: string; value: string; custom?: boolean }[] }
   assumptionsIntro: string
-  assumptions: { id: string; key: string; roman: string; text: string; custom?: boolean }[]
+  assumptions: { id: string; key: string; roman: string; text: string; custom?: boolean; inMou?: boolean }[]
   validity: string
   mouNote: string
   signoff: { name: string; title: string; company: string }
@@ -133,7 +133,7 @@ function baseText(settings: Settings, id: string, fallback: string): string {
 }
 
 const SUBJECT_WORDS: Record<ModuleId, string> = {
-  M1: 'ideation', M2: 'recipe development', M3: 'scale-up', M4: 'compliance', M5: 'commercialisation',
+  M1: 'ideation', M2: 'feasibility', M3: 'recipe development', M4: 'scale-up', M5: 'compliance', M6: 'commercialisation',
 }
 
 function listJoin(words: string[]): string {
@@ -163,9 +163,9 @@ export function phaseTitle(n: number, group: GroupId): string {
 
 export function defaultTranches(modules: Record<ModuleId, boolean>, tastings: number): Tranche[] {
   const names = ['Project Commencement']
-  if (modules.M2) names.push(tastings >= 4 ? 'Second Tasting' : 'First Tasting')
-  if (modules.M3) names.push('First Pilot Trial')
-  if (modules.M5) names.push('Technology Transfer')
+  if (modules.M3) names.push(tastings >= 4 ? 'Second Tasting' : 'First Tasting')
+  if (modules.M4) names.push('First Pilot Trial')
+  if (modules.M6) names.push('Technology Transfer')
   if (names.length === 1) names.push('Project Completion')
   const base = Math.floor(100 / names.length)
   const extra = 100 - base * names.length
@@ -189,7 +189,7 @@ export function assumptionAvailable(id: string, input: QuoteInput): boolean {
 /** Week ranges after switching modules off: later rows shift earlier, no gaps. */
 export function computeTimeline(input: QuoteInput, settings: Settings) {
   const preset = settings.presets[input.complexity]
-  const order: ModuleId[] = ['M1', 'M2', 'M3', 'M4', 'M5']
+  const order: ModuleId[] = MODULES.map((m) => m.id)
   const moduleStart = (m: ModuleId) =>
     Math.min(...TIMELINE_ROWS.filter((r) => r.module === m && preset[r.id]).map((r) => preset[r.id][0]))
 
@@ -235,8 +235,10 @@ export function buildQuoteDoc(input: QuoteInput, settings: Settings): QuoteDoc {
     } else {
       for (const def of SCOPE_ITEMS) {
         if (def.module !== group || input.removedItems.includes(def.id)) continue
+        if (def.unless && input.modules[def.unless]) continue
         const key = `item:${def.id}`
-        items.push({ id: def.id, key, n: 0, text: t(key, def.text) })
+        const wording = def.alt && input.modules[def.alt.ifOn] ? def.alt.text : def.text
+        items.push({ id: def.id, key, n: 0, text: t(key, wording) })
       }
     }
     for (const c of input.customItems.filter((x) => x.group === group)) {
@@ -406,11 +408,11 @@ export function buildQuoteDoc(input: QuoteInput, settings: Settings): QuoteDoc {
     const checked = input.assumptionsChecked[def.id] ?? defaultAssumptionChecked(def.id, input)
     if (!checked) continue
     const key = `assume:${def.id}`
-    clauses.push({ id: def.id, key, roman: '', text: t(key, def.text) })
+    clauses.push({ id: def.id, key, roman: '', text: t(key, `**${def.topic}:** ${def.text}`), inMou: def.inMou !== false })
   }
   for (const c of input.customAssumptions) {
     if (input.assumptionsChecked[c.id] === false) continue
-    clauses.push({ id: c.id, key: `assume:${c.id}`, roman: '', text: fill(input.texts[`assume:${c.id}`] ?? c.text, vars), custom: true })
+    clauses.push({ id: c.id, key: `assume:${c.id}`, roman: '', text: fill(input.texts[`assume:${c.id}`] ?? c.text, vars), custom: true, inMou: true })
   }
   clauses.forEach((c, i) => (c.roman = toRoman(i + 1)))
   doc.assumptions = clauses
@@ -422,7 +424,7 @@ export function buildQuoteDoc(input: QuoteInput, settings: Settings): QuoteDoc {
 export function newQuoteInput(settings: Settings, opts: Partial<QuoteInput> = {}): QuoteInput {
   const model = opts.model ?? 'milestone'
   const complexity = opts.complexity ?? 'medium'
-  const modules = opts.modules ?? { M1: true, M2: true, M3: true, M4: true, M5: true }
+  const modules = opts.modules ?? { M1: true, M2: true, M3: true, M4: true, M5: true, M6: true }
   const counts = opts.counts ?? { ...settings.counts[model] }
   const suggested = settings.fees[model][complexity]
   return {

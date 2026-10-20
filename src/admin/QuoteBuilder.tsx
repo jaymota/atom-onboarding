@@ -136,6 +136,12 @@ export default function QuoteBuilder() {
     set({ modules, tranches: untouched ? defaultTranches(modules, input.counts.tastings) : input.tranches })
   }
 
+  const setStart = (m1: boolean, m2: boolean) => {
+    const modules = { ...input.modules, M1: m1, M2: m2 }
+    const untouched = JSON.stringify(input.tranches) === JSON.stringify(defaultTranches(input.modules, input.counts.tastings))
+    set({ modules, tranches: untouched ? defaultTranches(modules, input.counts.tastings) : input.tranches })
+  }
+
   const setComplexity = (c: Complexity) => {
     const suggested = settings.fees[input.model][c]
     set({ complexity: c, timeline: {}, ...(input.feeConfirmed ? {} : { fee: suggested }) })
@@ -261,6 +267,7 @@ export default function QuoteBuilder() {
             setModule={setModule}
             setComplexity={setComplexity}
             setModel={setModel}
+            setStart={setStart}
             resetText={resetText}
           />
         </fieldset>
@@ -368,12 +375,13 @@ function NumberField({ label, value, onChange, min = 0, suffix }: { label: strin
   )
 }
 
-function Controls({ input, set, setModule, setComplexity, setModel, resetText }: {
+function Controls({ input, set, setModule, setComplexity, setModel, setStart, resetText }: {
   input: QuoteInput
   set: (p: Partial<QuoteInput>) => void
   setModule: (m: ModuleId, on: boolean) => void
   setComplexity: (c: Complexity) => void
   setModel: (m: Model) => void
+  setStart: (m1: boolean, m2: boolean) => void
   resetText: (k: string) => void
 }) {
   const { settings } = useSettings()
@@ -421,15 +429,19 @@ function Controls({ input, set, setModule, setComplexity, setModel, resetText }:
 
       <Section title="2. Where does the project start?">
         <div className="grid gap-2">
-          {[
-            { on: true, title: 'Phase 1 = Ideation & Rapid Prototyping', hint: 'Client needs us to figure out the product format' },
-            { on: false, title: 'Phase 1 = Recipe Development & Standardisation', hint: 'Client already knows what product they want' },
-          ].map((o) => (
-            <label key={String(o.on)} className={`flex cursor-pointer gap-3 rounded-md border px-3 py-2 text-sm ${input.modules.M1 === o.on ? 'border-atom-teal bg-atom-teal/5' : 'border-neutral-200'}`}>
-              <input type="radio" checked={input.modules.M1 === o.on} onChange={() => setModule('M1', o.on)} className="mt-1 accent-atom-teal" />
-              <span><b className="font-medium">{o.title}</b><span className="block text-xs text-neutral-500">{o.hint}</span></span>
-            </label>
-          ))}
+          {([
+            { id: 'ideation', title: 'Ideation & Rapid Prototyping', hint: 'Client needs us to figure out the product format', m1: true, m2: true },
+            { id: 'feasibility', title: 'Feasibility Study', hint: 'Client knows the product; we check it can be made, sold and labelled as intended', m1: false, m2: true },
+            { id: 'recipe', title: 'Recipe Development', hint: 'Client already has the research done and wants to go straight to the recipe', m1: false, m2: false },
+          ]).map((o) => {
+            const active = input.modules.M1 === o.m1 && input.modules.M2 === o.m2
+            return (
+              <label key={o.id} className={`flex cursor-pointer gap-3 rounded-md border px-3 py-2 text-sm ${active ? 'border-atom-teal bg-atom-teal/5' : 'border-neutral-200'}`}>
+                <input type="radio" checked={active} onChange={() => setStart(o.m1, o.m2)} className="mt-1 accent-atom-teal" />
+                <span><b className="font-medium">Phase 1 = {o.title}</b><span className="block text-xs text-neutral-500">{o.hint}</span></span>
+              </label>
+            )
+          })}
         </div>
         {input.modules.M1 && (
           <Toggle
@@ -654,11 +666,11 @@ function Controls({ input, set, setModule, setComplexity, setModel, resetText }:
         )}
       </Section>
 
-      <Section title="9. Fee assumptions" defaultOpen={false}>
+      <Section title="9. Terms & assumptions" defaultOpen={false}>
         <p className="text-xs text-neutral-500">Pre-ticked for a {input.model} quote. Click a clause in the preview to reword it.</p>
         {ASSUMPTIONS.filter((a) => assumptionAvailable(a.id, input)).map((a) => {
           const checked = input.assumptionsChecked[a.id] ?? defaultAssumptionChecked(a.id, input)
-          const text = input.texts[`assume:${a.id}`] ?? fill(settings.wording[`assume:${a.id}`] || a.text, vars)
+          const text = input.texts[`assume:${a.id}`] ?? fill(settings.wording[`assume:${a.id}`] || `**${a.topic}:** ${a.text}`, vars).replace(/\*\*/g, '')
           return (
             <label key={a.id} className="flex cursor-pointer items-start gap-2 text-xs">
               <input type="checkbox" checked={checked} onChange={(e) => set({ assumptionsChecked: { ...input.assumptionsChecked, [a.id]: e.target.checked } })} className="mt-0.5 accent-atom-teal" />

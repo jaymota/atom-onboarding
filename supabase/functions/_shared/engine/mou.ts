@@ -238,7 +238,8 @@ export function buildMouDoc(input: MouInput, settings: Settings): MouDoc {
       p(milestone ? 'assumptionsIntro_m' : 'assumptionsIntro_r'),
       {
         type: 'items', style: 'upperAlpha',
-        items: qd.assumptions.map((a, i) => ({ key: `assume:${a.id}`, label: `${toLetter(i)}.`, text: input.texts[`assume:${a.id}`] ?? a.text })),
+        // Payment, termination, handover etc. already have their own MOU clauses, so they're not repeated here.
+        items: qd.assumptions.filter((a) => a.inMou !== false).map((a, i) => ({ key: `assume:${a.id}`, label: `${toLetter(i)}.`, text: input.texts[`assume:${a.id}`] ?? a.text })),
       },
     ],
   })

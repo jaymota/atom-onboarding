@@ -293,7 +293,7 @@ export function draftFromIntake(a: Answers, settings: Settings): QuoteInput {
   const picked = MODULES.filter((m) => services.includes(m.name)).map((m) => m.id)
   // "Not sure", or nothing picked at all → the full project. Only "other services" → just those.
   const fullProject = services.includes(NOT_SURE) || (!picked.length && !addOns.length)
-  const modules: Record<ModuleId, boolean> = { M1: false, M2: false, M3: false, M4: false, M5: false }
+  const modules: Record<ModuleId, boolean> = { M1: false, M2: false, M3: false, M4: false, M5: false, M6: false }
   for (const m of MODULES) modules[m.id] = fullProject || picked.includes(m.id)
   if (str(a, 'formulation') === 'Existing commercial product to improve') modules.M1 = false
 

@@ -119,7 +119,7 @@ export function QuotePreview({ doc, company, editing }: { doc: QuoteDoc; company
         </>
       )}
 
-      <H>Fee Assumptions</H>
+      <H>Terms & Assumptions</H>
       <p><E k={doc.model === 'retainer' ? 'assumptions:retainer' : 'assumptions:milestone'} text={doc.assumptionsIntro} /></p>
       <ol className="mt-2 ml-4 space-y-1">
         {doc.assumptions.map((a) => (
