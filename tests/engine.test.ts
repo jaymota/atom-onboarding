@@ -49,8 +49,8 @@ describe('Test case 1: El Chico (milestone, no ideation, 3 variants, ₹9,00,000
   const doc = buildQuoteDoc(input, settings)
   it('one named phase per service, starting with Feasibility', () => {
     expect(doc.phases.map((p) => p.title)).toEqual([
-      'Phase 1: Feasibility Study', 'Phase 2: Recipe Development & Standardisation', 'Phase 3: Contract Manufacturing & Scale-up',
-      'Phase 4: Compliance & Licensing', 'Phase 5: Commercial Alignment',
+      'Feasibility Study', 'Recipe Development & Standardisation', 'Contract Manufacturing & Scale-up',
+      'Compliance & Licensing', 'Commercial Alignment',
     ])
     expect(items(doc).length).toBe(20)
     expect(doc.phases[1].items[0].n).toBe(6)
@@ -65,7 +65,7 @@ describe('Test case 1: El Chico (milestone, no ideation, 3 variants, ₹9,00,000
     expect(doc.subject).toBe('Quotation for feasibility, recipe development, scale-up, compliance and commercialisation of 3 sugar free sweet flavoured popped chips')
   })
   it('shifts the timeline earlier without gaps', () => {
-    expect(doc.timeline.rows[0]).toMatchObject({ label: 'Phase 1 – Feasibility Study', period: 'Week 1 - Week 5' })
+    expect(doc.timeline.rows[0]).toMatchObject({ label: 'Feasibility Study', period: 'Week 1 - Week 5' })
     expect(doc.timeline.totalWeeks).toBe(33)
     expect(doc.timeline.total).toBe('33 Weeks = 7 - 8 Months')
   })
@@ -92,7 +92,7 @@ describe('Test case 1: El Chico (milestone, no ideation, 3 variants, ₹9,00,000
 describe('Without a Feasibility phase', () => {
   const doc = buildQuoteDoc(newQuoteInput(settings, { productDescription: 'chips', variants: 1, modules: { ...ALL, M1: false, M2: false }, fee: 1, feeConfirmed: true }), settings)
   it('recipe development starts with the benchmark review instead', () => {
-    expect(doc.phases[0].title).toBe('Phase 1: Recipe Development & Standardisation')
+    expect(doc.phases[0].title).toBe('Recipe Development & Standardisation')
     expect(doc.phases[0].items[0].id).toBe('m3-0')
     expect(items(doc).find((i) => i.id === 'm4-1')!.text).toMatch(/^Identify and shortlist/)
   })
@@ -106,7 +106,7 @@ describe('Test case 2: Gut health (milestone, ideation, 2 products, ₹10,00,000
   const doc = buildQuoteDoc(input, settings)
   it('has 6 phases with ideation first', () => {
     expect(doc.phases.length).toBe(6)
-    expect(doc.phases[0].title).toBe('Phase 1: Ideation & Rapid Prototyping')
+    expect(doc.phases[0].title).toBe('Ideation & Rapid Prototyping')
     expect(doc.phases[0].items[1].text).toBe('Create up to 4 rapid prototypes to explore product directions.')
     expect(doc.subject).toContain('Quotation for ideation, feasibility, recipe development')
   })
@@ -135,7 +135,7 @@ describe('Test case 3: Wafer snacks (retainer ₹1,50,000/month, all services)',
   it('ends with the open-ended commercial run row', () => {
     const last = doc.timeline.rows.at(-1)!
     expect(last.period).toBe('Week 39 +')
-    expect(last.label).toBe('Phase 6 – Commercial Run Support')
+    expect(last.label).toBe('Commercial Run Support')
   })
   it('uses retainer payment and termination terms', () => {
     const ids = doc.assumptions.map((a) => a.id)

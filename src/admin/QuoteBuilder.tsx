@@ -458,7 +458,7 @@ function Controls({ input, set, setModule, setComplexity, setModel, setStart, re
             return (
               <label key={o.id} className={`flex cursor-pointer gap-3 rounded-md border px-3 py-2 text-sm ${active ? 'border-atom-teal bg-atom-teal/5' : 'border-neutral-200'}`}>
                 <input type="radio" checked={active} onChange={() => setStart(o.m1, o.m2)} className="mt-1 accent-atom-teal" />
-                <span><b className="font-medium">Phase 1 = {o.title}</b><span className="block text-xs text-neutral-500">{o.hint}</span></span>
+                <span><b className="font-medium">Start with {o.title}</b><span className="block text-xs text-neutral-500">{o.hint}</span></span>
               </label>
             )
           })}
@@ -503,7 +503,7 @@ function Controls({ input, set, setModule, setComplexity, setModel, setStart, re
             ))}
           </div>
         </div>
-        <Toggle checked={input.showPhaseHeadings} onChange={(v) => set({ showPhaseHeadings: v })} label="Show phase headings in the scope" />
+        <Toggle checked={input.showPhaseHeadings} onChange={(v) => set({ showPhaseHeadings: v })} label="Show service headings in the scope" />
       </Section>
 
       <Section title="4. Complexity & model">

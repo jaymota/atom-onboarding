@@ -170,10 +170,10 @@ export function defaultSubject(input: QuoteInput): string {
   return `Quotation for ${servicesPhrase(input)} of ${what || '…'}`
 }
 
-/** Phase heading, e.g. "Phase 2: Recipe Development & Standardisation". */
-export function phaseTitle(n: number, group: GroupId): string {
+/** Section heading in the scope, e.g. "Recipe Development & Standardisation". */
+export function phaseTitle(_n: number, group: GroupId): string {
   const name = group === 'addons' ? FIXED_TEXT.addonsTitle : MODULES.find((m) => m.id === group)?.name ?? ''
-  return group === 'addons' ? name : `Phase ${n}: ${name}`
+  return name
 }
 
 export function defaultTranches(modules: Record<ModuleId, boolean>, tastings: number): Tranche[] {
@@ -269,7 +269,6 @@ export function buildQuoteDoc(input: QuoteInput, settings: Settings): QuoteDoc {
       title: input.texts[titleKey] ?? (group === 'addons' ? baseText(settings, 'phase:addons', FIXED_TEXT.addonsTitle) : phaseTitle(phaseNo, group)),
     })
   }
-  const phaseOf = (g: GroupId) => phases.find((p) => p.group === g)?.number
 
   // ---- Deliverables and timelines
   const auto = computeTimeline(input, settings)
@@ -280,9 +279,8 @@ export function buildQuoteDoc(input: QuoteInput, settings: Settings): QuoteDoc {
     const ov = input.timeline[def.id] ?? {}
     const start = ov.start ?? a?.start ?? 0
     const end = ov.end ?? a?.end ?? 0
-    const pn = phaseOf(def.module)
     const labelKey = `tl:${def.id}`
-    const label = input.texts[labelKey] ?? `${pn ? `Phase ${pn} – ` : ''}${baseText(settings, labelKey, def.label)}`
+    const label = input.texts[labelKey] ?? baseText(settings, labelKey, def.label)
     rows.push({ id: def.id, n: 0, labelKey, label, period: '', start, end, openEnded: !!def.openEnded })
   }
   // Standalone services: scheduled by hand (weeks optional).
