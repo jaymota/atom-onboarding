@@ -35,39 +35,26 @@ Click **Open quote →** to start.
 
 The quote builder has **controls on the left** and the **quote on the right**. The quote on the right looks exactly like the PDF.
 
-Work down the left-hand sections:
+The **left panel** holds the business choices:
 
-1. **Client & product**: who it's addressed to, the product, number of variants and the date.
-2. **Where does the project start?** Choose one:
-   - *Ideation & Rapid Prototyping*: the client needs us to figure out the product.
-   - *Feasibility Study*: they know the product; we check it can be made, sold and labelled as intended.
-   - *Recipe Development*: they've done the research already.
+1. **Client & product**: who it's addressed to, the product, number of variants, date and validity.
+2. **Where does the project start?** Choose Ideation, Feasibility Study or Recipe Development. Tick **“Rapid prototyping is the main service”** for 10 prototypes instead of 3.
+3. **Services**: switch the six core services on or off (click **what's included** to see the checklist tasks behind each), plus any **Other services**.
+4. **Complexity & model**: Easy, Medium or Hard fills in the timeline. Milestone or Retainer changes the wording. Set the number of prototypes, tastings and pilot trials.
+5. **Fees**: the fee starts as a grey **suggestion**. Tick **“I’ve confirmed this fee”** to use it; you can't approve without this. Milestone quotes show the payment tranches here, and they must add up to 100%.
+6. **Timeline**: edit activity names and weeks, or add rows.
 
-   Phases renumber themselves.
-   - Tick **“Rapid prototyping is the main service”** for 10 prototypes instead of 3.
-3. **Services**: each of the six core services is one phase of the quote:
-   - Ideation & Rapid Prototyping
-   - Feasibility Study (competitive, literature and compliance review, plus a quick check with 3–4 manufacturers)
-   - Recipe Development & Standardisation
-   - Contract Manufacturing & Scale-up
-   - Compliance & Licensing
-   - Commercial Alignment
+**The document on the right works the same way everywhere:**
 
-   Switch them on or off. Click **what's included** to see the checklist tasks behind each one (only you see this). Below them, **Other services** adds standalone work under an “Additional Services” heading: FSSAI Licensing, Shelf-life Extension, Advisory Services, Contract Manufacturer Alignment and Product Approvals. Their timeline row says “As agreed” unless you enter weeks in section 6.
-4. **Complexity & model**: Easy, Medium or Hard fills in the timeline. Milestone or Retainer changes the wording.
-   - Tastings and pilot trials default to **3 and 3** for projects, and **2 and 2 per month** for retainers. Change the numbers if needed, and the wording updates everywhere.
-5. **Fees**: the fee starts as a grey **suggestion**. Change it if you like, then tick **“I’ve confirmed this fee”**. You can't approve without this.
-   - Milestone quotes show the payment tranches. The total must be 100%, and it turns red if not.
-6. **Timeline**: works like the payment tranches. Every row has an editable **activity name**, **start and end week**, and a **✕** to remove it. **+ Add row** adds your own activity; leave its weeks blank to show “As agreed”. Change weeks here, **or click the weeks in the quote's timeline table** (e.g. “Week 5 - Week 9”) and type new ones. The total updates by itself. You can also type something else, like “Ongoing”.
-7. **Scope items**: add your own items, or bring back removed ones.
-8. **Potential additional costs**: switch rows on or off, or add your own.
-9. **Terms & assumptions**: short client-friendly terms covering payment, termination, what's included, costs at actuals and handover. The right ones are pre-ticked for milestone or retainer. Tick or untick them, or add your own. (Payment and termination terms aren't repeated in the MOU's assumptions clause, because the MOU has its own full clauses for them.)
-
-**To change any wording**, click it in the quote on the right. A small box opens: edit the text, then press **Save**. **Reset to template wording** brings back the original. Use `**double stars**` to make words bold.
-
-**To remove anything** (a scope point, a term, a timeline row, a payment tranche, an extra-cost row, the GST summary, or a single sentence like Validity or the MOU note), hover over it in the quote and click the **✕** on its left. Everything you remove is listed in **“Removed from this quote”** above the preview, with a **restore** link.
-
-**To move or remove a point**, hover over it in the quote. Small **↑ ↓ ✕** buttons appear on its left. This works for scope points and for Terms & Assumptions. Numbers update automatically. Removed points can be brought back in section 7 (scope) or 9 (terms), where there's also a “reset to the standard order” link.
+| To… | Do this |
+|---|---|
+| Edit any text | Click it, type, then **Save**. **Reset to template wording** brings back the original. Use `**double stars**` for bold. |
+| Move a point, row or term | Hover over it and click **↑** or **↓** in the small toolbar that appears. |
+| Remove anything | Hover over it and click **✕**. This works for points, rows, terms, single sentences, the GST summary and whole sections. |
+| Move or remove a whole section (e.g. put Terms before Costs) | Hover over the section and use the toolbar in its top-right corner. |
+| Add your own | Click **+ Add point / + Add row / + Add term** at the end of any list. |
+| Bring something back | Open **“Removed or optional lines”** above the document and click **add back**. Terms meant for the other commercial model (e.g. retainer-only terms on a milestone quote) are listed there as *Optional*. |
+| Change timeline weeks | Click the weeks in the timeline table and type e.g. `Week 5 - Week 9` (or use section 6). |
 
 Everything **saves by itself**; watch for “All changes saved” at the top.
 

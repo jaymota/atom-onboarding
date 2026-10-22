@@ -1,21 +1,19 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import {
-  ADD_ONS, ASSUMPTIONS, ADDITIONAL_COSTS, COMPLEXITY_LABELS, MODULES, MODULE_HINTS, SCOPE_ITEMS, TIMELINE_ROWS,
-  TEMPLATE_FIXES, type Complexity, type GroupId, type Model, type ModuleId,
+  ADD_ONS, COMPLEXITY_LABELS, MODULES, MODULE_HINTS, type Complexity, type Model, type ModuleId,
 } from '../../supabase/functions/_shared/engine/content.ts'
 import {
-  type QuoteInput, assumptionAvailable, buildQuoteDoc, computeTimeline, defaultAssumptionChecked, defaultTranches,
-  diffQuoteInputs, quoteVars, LINE_LABELS,
+  type QuoteDoc, type QuoteInput, buildQuoteDoc, computeTimeline, defaultTranches, diffQuoteInputs, upgradeQuoteInput,
 } from '../../supabase/functions/_shared/engine/quote.ts'
 import { ALL_FIELDS, type Answers } from '../../supabase/functions/_shared/engine/intake.ts'
-import { amountInWords, fill, formatINR } from '../../supabase/functions/_shared/engine/format.ts'
+import { amountInWords, formatINR } from '../../supabase/functions/_shared/engine/format.ts'
 import { supabase, callFn } from '../lib/supabase'
 import { QUOTE_STATUS_LABEL, istDateTime } from '../lib/status'
 import { downloadBlob, fileDate, quotePdfBlob, safeName } from '../pdf/generate'
 import { QuotePreview } from '../components/QuotePreview'
 import {
-  Alert, Badge, Button, Label, Modal, PageSpinner, Select, TextArea, TextInput, Toggle, inputClass,
+  Alert, Badge, Button, Label, Modal, PageSpinner, TextArea, TextInput, Toggle, inputClass,
 } from '../components/ui'
 import { useSettings } from './AdminLayout'
 
@@ -86,7 +84,7 @@ export default function QuoteBuilder() {
     const { data: q } = await supabase.from('quotes').select('*').eq('id', id).single()
     if (!q) return
     setQuote(q as QuoteRow)
-    setInput(q.input as QuoteInput)
+    setInput(upgradeQuoteInput(q.input as QuoteInput))
     const [{ data: c }, { data: v }] = await Promise.all([
       supabase.from('clients').select('id, name, email, phone, brand, answers, details').eq('id', q.client_id).single(),
       supabase.from('quote_versions').select('*').eq('quote_id', id).order('version', { ascending: false }),
@@ -139,6 +137,43 @@ export default function QuoteBuilder() {
       return { ...i, texts }
     })
 
+  /** One set of actions for every list in the document. */
+  const visibleIds = (listKey: string): string[] => {
+    if (listKey === 'sections') return doc.sections
+    if (listKey === 'timeline') return doc.timeline.rows.map((r) => r.id)
+    if (listKey === 'costs') return doc.costs?.rows.map((r) => r.id) ?? []
+    if (listKey === 'terms') return doc.assumptions.map((a) => a.id)
+    return doc.phases.find((p) => p.listKey === listKey)?.items.map((i) => i.id) ?? []
+  }
+  const ops = {
+    text: (key: string, value: string) => {
+      // Typing "Week 5 - Week 9" (or "5-9") in the timeline changes the real weeks, so the total updates too.
+      const m = key.startsWith('tlp:') ? value.match(/^\s*(?:week\s*)?(\d+)\s*(?:-|–|to)\s*(?:week\s*)?(\d+)\s*$/i) : null
+      if (!m) return setText(key, value)
+      const rowId = key.slice(4)
+      const texts = { ...input.texts }
+      delete texts[key]
+      set({ texts, timeline: { ...input.timeline, [rowId]: { start: Number(m[1]), end: Number(m[2]) } } })
+    },
+    remove: (key: string) => {
+      if (input.tranches.some((t) => t.id === key)) return set({ tranches: input.tranches.filter((t) => t.id !== key) })
+      set({ hidden: [...new Set([...input.hidden, key])], shown: input.shown.filter((k) => k !== key) })
+    },
+    restore: (key: string) => set({ hidden: input.hidden.filter((k) => k !== key), shown: [...new Set([...input.shown, key])] }),
+    move: (listKey: string, id: string, dir: -1 | 1) => {
+      if (listKey === 'tranches') {
+        const ids = moveInList(input.tranches.map((t) => t.id), id, dir)
+        return set({ tranches: ids.map((x) => input.tranches.find((t) => t.id === x)!) })
+      }
+      set({ order: { ...input.order, [listKey]: moveInList(visibleIds(listKey), id, dir) } })
+    },
+    add: (listKey: string) => {
+      const text = listKey === 'timeline' ? 'New activity' : listKey === 'costs' ? 'New item' : 'New point (click to edit)'
+      const line = { id: uid('ln'), text, ...(listKey === 'costs' ? { value: 'Rs. ____' } : {}) }
+      set({ added: { ...input.added, [listKey]: [...(input.added[listKey] ?? []), line] } })
+    },
+  }
+
   const setModule = (m: ModuleId, on: boolean) => {
     const modules = { ...input.modules, [m]: on }
     // Keep Jay's own tranches; otherwise follow the modules.
@@ -165,7 +200,6 @@ export default function QuoteBuilder() {
       model: m,
       counts,
       showPhaseHeadings: m === 'milestone',
-      assumptionsChecked: {},
       tranches: defaultTranches(input.modules, counts.tastings),
       ...(input.feeConfirmed ? {} : { fee: suggested }),
     })
@@ -274,6 +308,7 @@ export default function QuoteBuilder() {
           <Controls
             input={input}
             doc={doc}
+            ops={ops}
             set={set}
             setModule={setModule}
             setComplexity={setComplexity}
@@ -288,51 +323,18 @@ export default function QuoteBuilder() {
           {doc.warnings.length > 0 && (
             <div className="mb-3"><Alert tone="warn">{doc.warnings.join(' ')}</Alert></div>
           )}
-          <p className="mb-2 text-xs text-neutral-500">Click any text to edit it (edited text is underlined with dots). Hover over any point, table row or line to remove it ✕ (points and terms can also be moved ↑ ↓).</p>
-          <RemovedPanel input={input} set={set} />
+          <p className="mb-2 text-xs text-neutral-500">Click any text to edit it. Hover over a line, row or section to move it ↑ ↓ or remove it ✕. Use “+ Add” to add your own.</p>
+          <RemovedPanel doc={doc} onRestore={ops.restore} />
           <QuotePreview
             doc={doc}
             company={settings.company}
             editing={locked ? undefined : {
-              onText: (key, value) => {
-                // Typing "Week 5 - Week 9" (or "5-9") in the timeline changes the real weeks, so the total updates too.
-                const m = key.startsWith('tlp:') ? value.match(/^\s*(?:week\s*)?(\d+)\s*(?:-|–|to)\s*(?:week\s*)?(\d+)\s*$/i) : null
-                if (m) {
-                  const rowId = key.slice(4)
-                  const texts = { ...input.texts }
-                  delete texts[key]
-                  set({ texts, timeline: { ...input.timeline, [rowId]: { ...(input.timeline[rowId] ?? {}), start: Number(m[1]), end: Number(m[2]) } } })
-                } else setText(key, value)
-              },
+              onText: ops.text,
               onReset: resetText,
               isEdited: (k) => k in input.texts,
-              onRemoveItem: (itemId) =>
-                itemId.startsWith('ci-')
-                  ? set({ customItems: input.customItems.filter((c) => c.id !== itemId) })
-                  : set({ removedItems: [...input.removedItems, itemId] }),
-              onMoveItem: (group, itemId, dir) => {
-                const ids = doc.phases.find((p) => p.group === group)?.items.map((i) => i.id) ?? []
-                set({ itemOrder: { ...(input.itemOrder ?? {}), [group]: moveInList(ids, itemId, dir) } })
-              },
-              onRemoveTerm: (termId) =>
-                termId.startsWith('ca-')
-                  ? set({ customAssumptions: input.customAssumptions.filter((c) => c.id !== termId) })
-                  : set({ assumptionsChecked: { ...input.assumptionsChecked, [termId]: false } }),
-              onMoveTerm: (termId, dir) =>
-                set({ assumptionOrder: moveInList(doc.assumptions.map((a) => a.id), termId, dir) }),
-              onRemoveRow: (table, rowId) => {
-                if (table === 'timeline' && rowId.startsWith('ct-')) set({ customTimeline: (input.customTimeline ?? []).filter((c) => c.id !== rowId) })
-                else if (table === 'timeline') set({ removedTimelineRows: [...input.removedTimelineRows, rowId] })
-                else if (table === 'tranche') set({ tranches: input.tranches.filter((t) => t.id !== rowId) })
-                else if (rowId.startsWith('cc-')) set({ customCosts: input.customCosts.filter((c) => c.id !== rowId) })
-                else set({ removedCosts: [...input.removedCosts, rowId] })
-              },
-              onHideLine: (key) =>
-                key === 'retainerEstimate'
-                  ? set({ showRetainerEstimate: false })
-                  : key === 'gstSummary'
-                    ? set({ showGstSummary: false })
-                    : set({ hiddenLines: [...(input.hiddenLines ?? []), key] }),
+              onRemove: ops.remove,
+              onMove: ops.move,
+              onAdd: ops.add,
             }}
           />
         </div>
@@ -359,7 +361,7 @@ export default function QuoteBuilder() {
                     <p className="text-xs text-neutral-500">{v.reason}</p>
                     <p className="mt-1 text-xs">{changes.length ? `Differences from now: ${changes.join(' · ')}` : 'Same as the current quote'}</p>
                     {changes.length > 0 && !locked && (
-                      <Button size="sm" variant="secondary" className="mt-2" onClick={() => { setInput(v.input); setPanel('none') }}>Restore this version</Button>
+                      <Button size="sm" variant="secondary" className="mt-2" onClick={() => { setInput(upgradeQuoteInput(v.input)); setPanel('none') }}>Restore this version</Button>
                     )}
                   </div>
                 )
@@ -419,9 +421,10 @@ function NumberField({ label, value, onChange, min = 0, suffix }: { label: strin
   )
 }
 
-export function Controls({ input, doc, set, setModule, setComplexity, setModel, setStart, resetText }: {
+export function Controls({ input, doc, ops, set, setModule, setComplexity, setModel, setStart, resetText }: {
   input: QuoteInput
-  doc: ReturnType<typeof buildQuoteDoc>
+  doc: QuoteDoc
+  ops: { remove: (key: string) => void; add: (listKey: string) => void }
   set: (p: Partial<QuoteInput>) => void
   setModule: (m: ModuleId, on: boolean) => void
   setComplexity: (c: Complexity) => void
@@ -431,13 +434,9 @@ export function Controls({ input, doc, set, setModule, setComplexity, setModel, 
 }) {
   const { settings } = useSettings()
   const [hint, setHint] = useState<ModuleId | null>(null)
-  const [newItem, setNewItem] = useState<{ group: GroupId; text: string }>({ group: 'M2', text: '' })
-  const [newClause, setNewClause] = useState('')
-  const [newCost, setNewCost] = useState({ label: '', value: '' })
   const suggested = settings.fees[input.model][input.complexity]
   const tranchesTotal = input.tranches.reduce((s, t) => s + (Number(t.pct) || 0), 0)
   const autoTimeline = computeTimeline(input, settings)
-  const vars = quoteVars(input)
 
   return (
     <>
@@ -584,11 +583,6 @@ export function Controls({ input, doc, set, setModule, setComplexity, setModel, 
             {input.feeConfirmed ? 'Fee confirmed' : 'I’ve confirmed this fee (it’s only a suggestion until you tick this)'}
           </label>
         </div>
-        <Toggle checked={input.showGstSummary} onChange={(v) => set({ showGstSummary: v })} label="Show GST and grand total" />
-        {input.model === 'retainer' && (
-          <Toggle checked={input.showRetainerEstimate} onChange={(v) => set({ showRetainerEstimate: v })} label="Show estimated total (monthly × months)" />
-        )}
-
         {input.model === 'milestone' && (
           <div>
             <div className="mb-1 flex items-center justify-between">
@@ -618,150 +612,37 @@ export function Controls({ input, doc, set, setModule, setComplexity, setModel, 
       </Section>
 
       <Section title="6. Timeline" defaultOpen={false} right={
-        Object.keys(input.timeline).length > 0 ? <button type="button" className="text-xs text-neutral-500 underline" onClick={() => set({ timeline: {} })}>reset weeks to preset</button> : null
+        Object.keys(input.timeline).length > 0 ? <button type="button" className="text-xs text-neutral-500 underline" onClick={() => set({ timeline: {} })}>reset weeks</button> : null
       }>
-        <p className="text-xs text-neutral-500">Weeks start from the {COMPLEXITY_LABELS[input.complexity]} preset. Edit any activity name or week, remove a row with ✕, or add your own. Leave weeks blank on a new row to show “As agreed”.</p>
+        <p className="text-xs text-neutral-500">Weeks start from the {COMPLEXITY_LABELS[input.complexity]} preset. Leave weeks blank to show “As agreed”.</p>
         <div className="space-y-2">
           {doc.timeline.rows.map((r) => {
-            const isCustom = r.id.startsWith('ct-')
             const ov = input.timeline[r.id] ?? {}
             const auto = autoTimeline.find((a) => a.id === r.id)
             const startVal = ov.start ?? (r.unscheduled ? undefined : auto?.start ?? r.start)
             const endVal = ov.end ?? (r.unscheduled ? undefined : auto?.end ?? r.end)
             const setRange = (k: 'start' | 'end', v: string) =>
-              set({ timeline: { ...input.timeline, [r.id]: { ...ov, [k]: v === '' ? undefined : Math.max(1, Number(v) || 1) } } })
-            const remove = () =>
-              isCustom
-                ? set({ customTimeline: (input.customTimeline ?? []).filter((c) => c.id !== r.id) })
-                : set({ removedTimelineRows: [...input.removedTimelineRows, r.id] })
+              set({ timeline: { ...input.timeline, [r.id]: { start: startVal, end: endVal, [k]: v === '' ? undefined : Math.max(1, Number(v) || 1) } } })
             return (
-              <div key={r.id} className="flex items-center gap-2">
-                <TextInput
-                  value={r.label}
-                  onChange={(e) => set({ texts: { ...input.texts, [r.labelKey]: e.target.value } })}
-                  className="min-w-0 flex-1 px-2 py-1.5 text-xs"
-                  aria-label="Activity"
-                />
+              <div key={r.id} className="group flex items-center gap-2">
+                <TextInput value={r.label} onChange={(e) => set({ texts: { ...input.texts, [r.labelKey]: e.target.value } })} className="min-w-0 flex-1 px-2 py-1.5 text-xs" aria-label="Activity" />
                 {r.openEnded ? (
-                  <span className="w-[8.5rem] text-center text-xs text-neutral-500">from week {r.start} onwards</span>
+                  <span className="w-[7.5rem] text-center text-xs text-neutral-500">week {r.start} onwards</span>
                 ) : (
                   <span className="flex shrink-0 items-center gap-1 text-xs">
-                    W<span className="w-14"><input type="number" min={1} value={startVal ?? ''} onChange={(e) => setRange('start', e.target.value)} className={`${inputClass} px-1.5 py-1.5 text-xs`} aria-label="Start week" /></span>
+                    <span className="w-14"><input type="number" min={1} value={startVal ?? ''} onChange={(e) => setRange('start', e.target.value)} className={`${inputClass} px-1.5 py-1.5 text-xs`} aria-label="Start week" /></span>
                     –<span className="w-14"><input type="number" min={1} value={endVal ?? ''} onChange={(e) => setRange('end', e.target.value)} className={`${inputClass} px-1.5 py-1.5 text-xs`} aria-label="End week" /></span>
                   </span>
                 )}
-                <button type="button" onClick={remove} title="Remove this row" className="px-1 text-neutral-400 hover:text-red-600">✕</button>
+                <button type="button" onClick={() => ops.remove(r.id)} title="Remove this row" className="px-1 text-neutral-300 opacity-0 transition hover:text-red-600 group-hover:opacity-100">✕</button>
               </div>
             )
           })}
         </div>
         <div className="flex items-center justify-between">
-          <Button size="sm" variant="secondary" onClick={() => set({ customTimeline: [...(input.customTimeline ?? []), { id: uid('ct'), label: 'New activity' }] })}>+ Add row</Button>
+          <Button size="sm" variant="secondary" onClick={() => ops.add('timeline')}>+ Add row</Button>
           <span className="text-sm font-medium">{doc.timeline.total}</span>
         </div>
-        {input.removedTimelineRows.length > 0 && (
-          <button type="button" className="text-xs text-atom-teal underline" onClick={() => set({ removedTimelineRows: [] })}>Bring back removed rows ({input.removedTimelineRows.length})</button>
-        )}
-      </Section>
-
-      <Section title="7. Scope items" defaultOpen={false}>
-        <p className="text-xs text-neutral-500">Click a point in the preview to reword it, or hover over it to move it ↑ ↓ or remove it ✕.</p>
-        {Object.keys(input.itemOrder ?? {}).length > 0 && (
-          <button type="button" className="text-xs text-atom-teal underline" onClick={() => set({ itemOrder: {} })}>Reset points to the standard order</button>
-        )}
-        {input.removedItems.length > 0 && (
-          <div>
-            <Label>Removed items</Label>
-            <ul className="space-y-1 text-xs">
-              {input.removedItems.map((rid) => {
-                const def = SCOPE_ITEMS.find((s) => s.id === rid) ?? ADD_ONS.map((a) => ({ id: a.id, text: a.scope })).find((a) => a.id === rid)
-                return (
-                  <li key={rid} className="flex items-start justify-between gap-2 rounded bg-neutral-50 px-2 py-1">
-                    <span className="line-through">{def ? fill(def.text, vars) : rid}</span>
-                    <button type="button" className="shrink-0 text-atom-teal underline" onClick={() => set({ removedItems: input.removedItems.filter((x) => x !== rid) })}>restore</button>
-                  </li>
-                )
-              })}
-            </ul>
-          </div>
-        )}
-        <div>
-          <Label>Add your own item</Label>
-          <Select value={newItem.group} onChange={(e) => setNewItem({ ...newItem, group: e.target.value as GroupId })} options={[
-            ...MODULES.map((m) => ({ value: m.id, label: m.name })),
-            { value: 'addons', label: 'Additional Services' },
-          ]} />
-          <TextArea className="mt-2" value={newItem.text} onChange={(e) => setNewItem({ ...newItem, text: e.target.value })} placeholder="Describe the extra deliverable…" />
-          <Button size="sm" className="mt-2" disabled={!newItem.text.trim()} onClick={() => {
-            set({ customItems: [...input.customItems, { id: uid('ci'), group: newItem.group, text: newItem.text.trim() }] })
-            setNewItem({ ...newItem, text: '' })
-          }}>+ Add item</Button>
-        </div>
-      </Section>
-
-      <Section title="8. Potential additional costs" defaultOpen={false}>
-        <Toggle checked={input.showAdditionalCosts} onChange={(v) => set({ showAdditionalCosts: v })} label="Include this table" />
-        {input.showAdditionalCosts && (
-          <>
-            {ADDITIONAL_COSTS.filter((c) => !c.requires || input.modules[c.requires]).map((c) => {
-              const removed = input.removedCosts.includes(c.id)
-              return (
-                <Toggle key={c.id} checked={!removed} label={fill(c.label, vars)}
-                  onChange={(on) => set({ removedCosts: on ? input.removedCosts.filter((x) => x !== c.id) : [...input.removedCosts, c.id] })} />
-              )
-            })}
-            {input.customCosts.map((c) => (
-              <div key={c.id} className="flex items-center justify-between gap-2 text-sm">
-                <span>{c.label} — {c.value}</span>
-                <button type="button" className="text-neutral-400 hover:text-red-600" onClick={() => set({ customCosts: input.customCosts.filter((x) => x.id !== c.id) })}>✕</button>
-              </div>
-            ))}
-            <div className="grid grid-cols-[1fr_140px] gap-2">
-              <TextInput placeholder="Area of work" value={newCost.label} onChange={(e) => setNewCost({ ...newCost, label: e.target.value })} />
-              <TextInput placeholder="Rs. 10,000 per…" value={newCost.value} onChange={(e) => setNewCost({ ...newCost, value: e.target.value })} />
-            </div>
-            <Button size="sm" variant="secondary" disabled={!newCost.label.trim()} onClick={() => {
-              set({ customCosts: [...input.customCosts, { id: uid('cc'), ...newCost }] })
-              setNewCost({ label: '', value: '' })
-            }}>+ Add row</Button>
-          </>
-        )}
-      </Section>
-
-      <Section title="9. Terms & assumptions" defaultOpen={false}>
-        <p className="text-xs text-neutral-500">Pre-ticked for a {input.model} quote. Click a term in the preview to reword it, or hover over it to move ↑ ↓ or remove ✕ (untick here to remove, tick to bring back).</p>
-        {(input.assumptionOrder ?? []).length > 0 && (
-          <button type="button" className="text-xs text-atom-teal underline" onClick={() => set({ assumptionOrder: [] })}>Reset terms to the standard order</button>
-        )}
-        {ASSUMPTIONS.filter((a) => assumptionAvailable(a.id, input)).map((a) => {
-          const checked = input.assumptionsChecked[a.id] ?? defaultAssumptionChecked(a.id, input)
-          const text = input.texts[`assume:${a.id}`] ?? fill(settings.wording[`assume:${a.id}`] || `**${a.topic}:** ${a.text}`, vars).replace(/\*\*/g, '')
-          return (
-            <label key={a.id} className="flex cursor-pointer items-start gap-2 text-xs">
-              <input type="checkbox" checked={checked} onChange={(e) => set({ assumptionsChecked: { ...input.assumptionsChecked, [a.id]: e.target.checked } })} className="mt-0.5 accent-atom-teal" />
-              <span className={checked ? '' : 'text-neutral-400'}>
-                {text}
-                {a.tag !== 'both' && <span className="ml-1 rounded bg-neutral-100 px-1 text-[10px] text-neutral-500">{a.tag} default</span>}
-              </span>
-            </label>
-          )
-        })}
-        {input.customAssumptions.map((c) => (
-          <div key={c.id} className="flex items-start gap-2 text-xs">
-            <input type="checkbox" checked={input.assumptionsChecked[c.id] !== false} onChange={(e) => set({ assumptionsChecked: { ...input.assumptionsChecked, [c.id]: e.target.checked } })} className="mt-0.5 accent-atom-teal" />
-            <span className="flex-1">{input.texts[`assume:${c.id}`] ?? c.text}</span>
-            <button type="button" className="text-neutral-400 hover:text-red-600" onClick={() => set({ customAssumptions: input.customAssumptions.filter((x) => x.id !== c.id) })}>✕</button>
-          </div>
-        ))}
-        <TextArea value={newClause} onChange={(e) => setNewClause(e.target.value)} placeholder="Add your own clause…" />
-        <Button size="sm" variant="secondary" disabled={!newClause.trim()} onClick={() => {
-          set({ customAssumptions: [...input.customAssumptions, { id: uid('ca'), text: newClause.trim() }] })
-          setNewClause('')
-        }}>+ Add clause</Button>
-      </Section>
-
-      <Section title="Typos fixed from the old templates" defaultOpen={false}>
-        <ul className="list-disc space-y-1 pl-5 text-xs text-neutral-600">{TEMPLATE_FIXES.map((f) => <li key={f}>{f}</li>)}</ul>
       </Section>
     </>
   )
@@ -770,39 +651,16 @@ export function Controls({ input, doc, set, setModule, setComplexity, setModel, 
 /* ------------------------------------------------------------------ panels & modals */
 
 /** Everything removed from the document, with one-click restore. */
-function RemovedPanel({ input, set }: { input: QuoteInput; set: (p: Partial<QuoteInput>) => void }) {
-  const tl = input.removedTimelineRows.map((id) => ({
-    id, label: TIMELINE_ROWS.find((r) => r.id === id)?.label ?? ADD_ONS.find((a) => a.id === id)?.name ?? id,
-    restore: () => set({ removedTimelineRows: input.removedTimelineRows.filter((x) => x !== id) }),
-  }))
-  const lines = (input.hiddenLines ?? []).map((k) => ({
-    id: k, label: LINE_LABELS[k] ?? k,
-    restore: () => set({ hiddenLines: (input.hiddenLines ?? []).filter((x) => x !== k) }),
-  }))
-  const items = input.removedItems.map((id) => ({
-    id, label: (SCOPE_ITEMS.find((x) => x.id === id)?.text ?? ADD_ONS.find((a) => a.id === id)?.name ?? id).replace(/\*\*/g, '').slice(0, 70) + '…',
-    restore: () => set({ removedItems: input.removedItems.filter((x) => x !== id) }),
-  }))
-  const costs = input.removedCosts.map((id) => ({
-    id, label: ADDITIONAL_COSTS.find((c) => c.id === id)?.label.replace(/\{[^}]+\}/g, '').slice(0, 60) ?? id,
-    restore: () => set({ removedCosts: input.removedCosts.filter((x) => x !== id) }),
-  }))
-  const all = [
-    ...items.map((x) => ({ ...x, kind: 'Scope point' })),
-    ...tl.map((x) => ({ ...x, kind: 'Timeline row' })),
-    ...costs.map((x) => ({ ...x, kind: 'Cost row' })),
-    ...lines.map((x) => ({ ...x, kind: 'Line' })),
-    ...(input.showGstSummary ? [] : [{ id: 'gst', label: 'GST and total summary', kind: 'Line', restore: () => set({ showGstSummary: true }) }]),
-  ]
-  if (!all.length) return null
+function RemovedPanel({ doc, onRestore }: { doc: QuoteDoc; onRestore: (key: string) => void }) {
+  if (!doc.removed.length) return null
   return (
     <details className="mb-3 rounded-md border border-neutral-200 bg-white px-3 py-2 text-xs">
-      <summary className="cursor-pointer font-medium text-neutral-700">Removed from this quote ({all.length}) · click to restore</summary>
+      <summary className="cursor-pointer font-medium text-neutral-700">Removed or optional lines ({doc.removed.length}) · click to add back</summary>
       <ul className="mt-2 space-y-1">
-        {all.map((x) => (
-          <li key={`${x.kind}-${x.id}`} className="flex items-center justify-between gap-3">
+        {doc.removed.map((x) => (
+          <li key={x.key} className="flex items-center justify-between gap-3">
             <span><span className="text-neutral-400">{x.kind}:</span> {x.label}</span>
-            <button type="button" className="shrink-0 text-atom-teal underline" onClick={x.restore}>restore</button>
+            <button type="button" className="shrink-0 text-atom-teal underline" onClick={() => onRestore(x.key)}>add back</button>
           </li>
         ))}
       </ul>

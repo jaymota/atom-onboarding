@@ -130,7 +130,7 @@ describe('Test case 3: Wafer snacks (retainer ₹1,50,000/month, all services)',
     expect(doc.feesText).toContain('INR 1,50,000 + GST per month')
     expect(items(doc).find((i) => i.id === 'm3-4')!.text).toContain('2 tasting sessions per month')
     expect(doc.tranches).toBeUndefined()
-    expect(doc.retainerEstimate).toBe('Estimated total fees: INR 13,50,000 + GST (9 months × INR 1,50,000).')
+    expect(doc.feeLines.map((l) => l.text)).toEqual(['**The fee is payable at the start of every month.**', 'Estimated total fees: INR 13,50,000 + GST (9 months × INR 1,50,000).'])
   })
   it('ends with the open-ended commercial run row', () => {
     const last = doc.timeline.rows.at(-1)!
@@ -178,7 +178,7 @@ describe('MOU', () => {
 describe('Re-ordering', () => {
   it('follows Jay’s order for scope points and terms', () => {
     const base = newQuoteInput(settings, { productDescription: 'chips', variants: 1, fee: 1, feeConfirmed: true })
-    const input = { ...base, itemOrder: { M1: ['m1-3', 'm1-1'] }, assumptionOrder: ['a-handover'] }
+    const input = { ...base, order: { 'scope:M1': ['m1-3', 'm1-1'], terms: ['a-handover'] } }
     const doc = buildQuoteDoc(input, settings)
     expect(doc.phases[0].items.map((i) => i.id)).toEqual(['m1-3', 'm1-1', 'm1-2'])
     expect(doc.phases[0].items.map((i) => i.n)).toEqual([1, 2, 3])
@@ -190,11 +190,59 @@ describe('Re-ordering', () => {
 describe('Custom timeline rows', () => {
   it('go before the open-ended row, count towards the total, and show "As agreed" without weeks', () => {
     const base = newQuoteInput(settings, { productDescription: 'chips', variants: 1, fee: 1, feeConfirmed: true })
-    const input = { ...base, customTimeline: [{ id: 'ct-1', label: 'Consumer testing', start: 38, end: 44 }, { id: 'ct-2', label: 'Launch support' }] }
+    const input = {
+      ...base,
+      added: { timeline: [{ id: 'ct-1', text: 'Consumer testing' }, { id: 'ct-2', text: 'Launch support' }] },
+      timeline: { 'ct-1': { start: 38, end: 44 } },
+    }
     const doc = buildQuoteDoc(input, settings)
     const labels = doc.timeline.rows.map((r) => r.label)
     expect(labels.slice(-3)).toEqual(['Consumer testing', 'Launch support', 'Commercial Run Support'])
     expect(doc.timeline.rows.find((r) => r.id === 'ct-2')!.period).toBe('As agreed')
     expect(doc.timeline.totalWeeks).toBe(44)
+  })
+})
+
+
+describe('One editing system', () => {
+  const base = newQuoteInput(settings, { productDescription: 'chips', variants: 1, fee: 900000, feeConfirmed: true })
+  it('removes and restores any line, row, term or section', () => {
+    const doc = buildQuoteDoc({ ...base, hidden: ['m1-2', 't-feasibility', 'c-flavour', 'a-outcomes', 'validity', 'gstSummary', 'sec:costs'] }, settings)
+    expect(doc.phases[0].items.map((i) => i.id)).toEqual(['m1-1', 'm1-3'])
+    expect(doc.timeline.rows.some((r) => r.id === 't-feasibility')).toBe(false)
+    expect(doc.assumptions.some((a) => a.id === 'a-outcomes')).toBe(false)
+    expect(doc.validity).toBe('')
+    expect(doc.gstSummary).toBeUndefined()
+    expect(doc.sections).not.toContain('costs')
+    expect(doc.removed.map((r) => r.key).sort()).toEqual(['a-pay-retainer', 'a-termination-r', 'a-outcomes', 'c-flavour', 'gstSummary', 'm1-2', 'sec:costs', 't-feasibility', 'validity'].sort())
+  })
+  it('lets Jay switch on a term meant for the other model', () => {
+    const doc = buildQuoteDoc({ ...base, shown: ['a-pay-retainer'] }, settings)
+    expect(doc.assumptions.map((a) => a.id)).toContain('a-pay-retainer')
+  })
+  it('moves sections and adds lines to any list', () => {
+    const doc = buildQuoteDoc({
+      ...base,
+      order: { sections: ['timeline', 'scope'] },
+      added: { 'scope:M2': [{ id: 'ln-1', text: 'Extra point' }], terms: [{ id: 'ln-2', text: 'Extra term' }], costs: [{ id: 'ln-3', text: 'Extra cost', value: 'Rs. 5,000' }] },
+    }, settings)
+    expect(doc.sections.slice(0, 2)).toEqual(['timeline', 'scope'])
+    expect(doc.phases[1].items.at(-1)!.text).toBe('Extra point')
+    expect(doc.assumptions.at(-1)!.text).toBe('Extra term')
+    expect(doc.costs!.rows.at(-1)).toMatchObject({ label: 'Extra cost', value: 'Rs. 5,000' })
+  })
+  it('upgrades quotes saved by the older version', () => {
+    const old = {
+      ...base, hidden: undefined, shown: undefined, order: undefined, added: undefined,
+      removedItems: ['m1-2'], customItems: [{ id: 'ci-1', group: 'M2', text: 'Old custom point' }],
+      assumptionsChecked: { 'a-outcomes': false }, customAssumptions: [], removedCosts: [], customCosts: [],
+      removedTimelineRows: [], showGstSummary: false, showRetainerEstimate: true, showAdditionalCosts: true, hiddenLines: ['mouNote'],
+    } as unknown as typeof base
+    const doc = buildQuoteDoc(old, settings)
+    expect(doc.phases[0].items.map((i) => i.id)).toEqual(['m1-1', 'm1-3'])
+    expect(doc.phases[1].items.at(-1)!.text).toBe('Old custom point')
+    expect(doc.assumptions.some((a) => a.id === 'a-outcomes')).toBe(false)
+    expect(doc.gstSummary).toBeUndefined()
+    expect(doc.mouNote).toBe('')
   })
 })

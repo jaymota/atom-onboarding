@@ -1,237 +1,24 @@
 import { createContext, useContext, type ReactNode } from 'react'
-import type { QuoteDoc } from '../../supabase/functions/_shared/engine/quote.ts'
+import { SECTION_TITLES, type QuoteDoc, type SectionKey } from '../../supabase/functions/_shared/engine/quote.ts'
 import type { CompanySettings } from '../../supabase/functions/_shared/engine/settings.ts'
 import { Editable, RichText } from './ui'
 
+/**
+ * One editing system for the whole document:
+ * click text to edit · hover to move ↑↓ or remove · "+ Add" at the end of each list.
+ */
 export interface PreviewEditing {
   onText: (key: string, value: string) => void
   onReset: (key: string) => void
   isEdited: (key: string) => boolean
-  onRemoveItem?: (id: string) => void
-  onMoveItem?: (group: string, id: string, dir: -1 | 1) => void
-  onRemoveTerm?: (id: string) => void
-  onMoveTerm?: (id: string, dir: -1 | 1) => void
-  /** Remove a table row: timeline, additional cost or payment tranche. */
-  onRemoveRow?: (table: 'timeline' | 'cost' | 'tranche', id: string) => void
-  /** Remove a single sentence/block (e.g. 'validity', 'mouNote'). */
-  onHideLine?: (key: string) => void
-}
-
-/** ↑ ↓ ✕ buttons at the end of a point (faint until hovered). */
-function PointTools({ first, last, onMove, onRemove, what }: {
-  first: boolean
-  last: boolean
-  onMove: (dir: -1 | 1) => void
-  onRemove: () => void
-  what: string
-}) {
-  const btn = 'flex h-6 w-6 items-center justify-center rounded text-xs text-neutral-600 hover:bg-atom-aqua disabled:opacity-25'
-  return (
-    <span className="ml-1 inline-flex h-6 shrink-0 items-center self-start rounded-md border border-neutral-200 bg-white font-sans opacity-40 shadow-sm transition group-hover:opacity-100">
-      <button type="button" className={btn} disabled={first} onClick={() => onMove(-1)} title={`Move ${what} up`}>↑</button>
-      <button type="button" className={btn} disabled={last} onClick={() => onMove(1)} title={`Move ${what} down`}>↓</button>
-      <button type="button" className={`${btn} hover:text-red-600`} onClick={onRemove} title={`Remove this ${what}`}>✕</button>
-    </span>
-  )
-}
-
-/** A ✕ shown on hover (and faintly otherwise) that removes a row or line. */
-function RemoveTool({ onRemove, what, className = '' }: { onRemove: () => void; what: string; className?: string }) {
-  return (
-    <button
-      type="button"
-      onClick={onRemove}
-      title={`Remove this ${what}`}
-      aria-label={`Remove this ${what}`}
-      className={`inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-md border border-neutral-200 bg-white font-sans text-xs font-normal text-neutral-500 opacity-40 shadow-sm transition hover:border-red-300 hover:text-red-600 group-hover:opacity-100 ${className}`}
-    >
-      ✕
-    </button>
-  )
-}
-
-/** A paragraph that can be removed in edit mode (✕ sits at the end of the line). */
-function Line({ k, text, className = '' }: { k: string; text: string; className?: string }) {
-  const editing = useContext(EditingContext)
-  if (!text) return null
-  return (
-    <p className={`group flex items-start gap-2 ${className}`}>
-      <span className="flex-1"><E k={k} text={text} /></span>
-      {editing?.onHideLine && <RemoveTool what="line" onRemove={() => editing.onHideLine!(k)} />}
-    </p>
-  )
-}
-
-/** Table row; in edit mode the first cell shows a ✕ next to the number. */
-function Row({ cells, onRemove, bold }: { cells: ReactNode[]; onRemove?: () => void; bold?: boolean }) {
-  return (
-    <tr className={`group ${bold ? 'font-bold' : ''}`}>
-      {cells.map((c, i) => (
-        <td key={i} className="border border-neutral-400 px-2 py-1 align-top">
-          {i === 0 && onRemove ? (
-            <span className="flex items-start justify-between gap-1">
-              <span>{c}</span>
-              <RemoveTool what="row" onRemove={onRemove} />
-            </span>
-          ) : c}
-        </td>
-      ))}
-    </tr>
-  )
-}
-
-/** The quote drawn as a page — the same layout as the PDF. */
-export function QuotePreview({ doc, company, editing }: { doc: QuoteDoc; company: CompanySettings; editing?: PreviewEditing }) {
-  return (
-    <EditingContext.Provider value={editing}>
-    <article className="quote-page mx-auto w-full max-w-[820px] bg-white px-6 py-8 font-serif text-[14px] leading-relaxed text-neutral-900 shadow-sm ring-1 ring-neutral-200 sm:px-14 sm:py-12">
-      <Letterhead company={company} />
-
-      <p className="mt-6 text-right"><b>Date:</b> {doc.date}</p>
-      {doc.quoteNumber && <p className="text-right text-xs text-neutral-500">Ref: {doc.quoteNumber}</p>}
-
-      <p className="mt-4"><E k="to" text={doc.to} /></p>
-      <p className="mt-4"><b>Subject:</b> <E k="subject" text={doc.subject} /></p>
-
-      <H>Scope of Work</H>
-      <Line k="intro" text={doc.intro} />
-      {doc.phases.map((ph) => (
-        <div key={ph.group} className="mt-3">
-          {doc.showPhaseHeadings && <p className="mt-4 mb-1 font-bold text-atom-teal">{ph.title}</p>}
-          <ol className="ml-6 space-y-1">
-            {ph.items.map((it, idx) => (
-              <li key={it.id} className="group relative flex gap-2">
-                <span className="w-7 shrink-0 text-right">{it.n}.</span>
-                <span className="flex-1"><E k={it.key} text={it.text} /></span>
-                {editing?.onRemoveItem && (
-                  <PointTools
-                    what="point"
-                    first={idx === 0}
-                    last={idx === ph.items.length - 1}
-                    onMove={(dir) => editing.onMoveItem?.(ph.group, it.id, dir)}
-                    onRemove={() => editing.onRemoveItem!(it.id)}
-                  />
-                )}
-              </li>
-            ))}
-          </ol>
-        </div>
-      ))}
-
-      <H>Fees</H>
-      <p><E k={doc.model === 'retainer' ? 'fees:retainer' : 'fees:milestone'} text={doc.feesText} /></p>
-      <Line k="retainerPayable" text={doc.retainerPayable ?? ''} className="mt-3 font-bold" />
-      <Line k="retainerEstimate" text={doc.retainerEstimate ?? ''} className="mt-2" />
-
-      {doc.tranches && (
-        <>
-          <Line k="tranchesIntro" text={doc.tranchesIntro ?? ''} className="mt-4 font-bold" />
-          <table className="mt-2 w-full border-collapse text-[13px]">
-            <thead>
-              <tr className="bg-atom-teal/10"><Th w="12%">Sr.No.</Th><Th w="48%">Milestone</Th><Th w="18%">% of Fees</Th><Th w="22%">Amount</Th></tr>
-            </thead>
-            <tbody>
-              {doc.tranches.rows.map((r) => (
-                <Row key={r.id} cells={[r.n, r.name, `${r.pct}%`, r.amount]} onRemove={editing?.onRemoveRow ? () => editing.onRemoveRow!('tranche', r.id) : undefined} />
-              ))}
-              <Row bold cells={['', 'Total', `${doc.tranches.totalPct}%`, doc.tranches.totalAmount]} />
-            </tbody>
-          </table>
-        </>
-      )}
-      {doc.gstSummary && (
-        <div className="group mt-2 ml-auto flex w-fit items-start gap-2">
-        <table className="text-[13px]">
-          <tbody>
-            <tr><td className="pr-6">Fees</td><td className="text-right">{doc.gstSummary.fee}</td></tr>
-            <tr><td className="pr-6">{doc.gstSummary.gstLabel}</td><td className="text-right">{doc.gstSummary.gst}</td></tr>
-            <tr className="font-bold"><td className="pr-6">Total</td><td className="text-right">{doc.gstSummary.total}</td></tr>
-          </tbody>
-        </table>
-        {editing?.onHideLine && <RemoveTool what="GST summary" onRemove={() => editing.onHideLine!('gstSummary')} />}
-        </div>
-      )}
-
-      <H>Deliverables and timelines:</H>
-      <table className="w-full border-collapse text-[13px]">
-        <thead>
-          <tr className="bg-atom-teal/10">
-            <Th w="12%">Sr.No.</Th><Th w="58%">Actionables</Th><Th w="30%">Timeline</Th>
-          </tr>
-        </thead>
-        <tbody>
-          {doc.timeline.rows.map((r) => (
-            <Row
-              key={r.id}
-              cells={[r.n, <E k={r.labelKey} text={r.label} />, <E k={`tlp:${r.id}`} text={r.period} />]}
-              onRemove={editing?.onRemoveRow ? () => editing.onRemoveRow!('timeline', r.id) : undefined}
-            />
-          ))}
-          <tr className="font-bold">
-            <Td />
-            <Td>Total</Td>
-            <Td><E k="tl:total" text={doc.timeline.total} /></Td>
-          </tr>
-        </tbody>
-      </table>
-
-      {doc.costs && (
-        <>
-          <H>Potential Additional Costs:</H>
-          <table className="w-full border-collapse text-[13px]">
-            <thead>
-              <tr className="bg-atom-teal/10">
-                <Th w="12%">Sr. No.</Th><Th w="58%">Areas of Work</Th><Th w="30%">Fees / Costs</Th>
-              </tr>
-            </thead>
-            <tbody>
-              {doc.costs.rows.map((r) => (
-                <Row
-                  key={r.id}
-                  cells={[r.n, <E k={r.labelKey} text={r.label} />, <E k={r.valueKey} text={r.value} />]}
-                  onRemove={editing?.onRemoveRow ? () => editing.onRemoveRow!('cost', r.id) : undefined}
-                />
-              ))}
-            </tbody>
-          </table>
-        </>
-      )}
-
-      <H>Terms & Assumptions</H>
-      <p><E k={doc.model === 'retainer' ? 'assumptions:retainer' : 'assumptions:milestone'} text={doc.assumptionsIntro} /></p>
-      <ol className="mt-2 ml-4 space-y-1">
-        {doc.assumptions.map((a, idx) => (
-          <li key={a.id} className="group relative flex gap-2">
-            <span className="w-9 shrink-0 text-right">{a.roman}.</span>
-            <span className="flex-1"><E k={a.key} text={a.text} /></span>
-            {editing?.onRemoveTerm && (
-              <PointTools
-                what="term"
-                first={idx === 0}
-                last={idx === doc.assumptions.length - 1}
-                onMove={(dir) => editing.onMoveTerm?.(a.id, dir)}
-                onRemove={() => editing.onRemoveTerm!(a.id)}
-              />
-            )}
-          </li>
-        ))}
-      </ol>
-
-      <Line k="validity" text={doc.validity} className="mt-6" />
-      <Line k="mouNote" text={doc.mouNote} className="mt-4" />
-
-      <p className="mt-6">Yours Sincerely,</p>
-      <p className="mt-4">{doc.signoff.name}<br />{doc.signoff.title}<br />{doc.signoff.company}</p>
-
-      <Footer company={company} />
-    </article>
-    </EditingContext.Provider>
-  )
+  onRemove?: (key: string) => void
+  onMove?: (listKey: string, id: string, dir: -1 | 1) => void
+  onAdd?: (listKey: string) => void
 }
 
 export const EditingContext = createContext<PreviewEditing | undefined>(undefined)
 
-/** Editable text when the preview is in edit mode, plain text otherwise. */
+/** Editable text when editing, plain text otherwise. */
 export function E({ k, text, className }: { k: string; text: string; className?: string }) {
   const editing = useContext(EditingContext)
   if (!editing) return <span className={className}><RichText text={text} /></span>
@@ -243,6 +30,220 @@ export function E({ k, text, className }: { k: string; text: string; className?:
       onSave={(v) => editing.onText(k, v)}
       onReset={() => editing.onReset(k)}
     />
+  )
+}
+
+/** Small ↑ ↓ ✕ toolbar, shown only while hovering its line. */
+function Tools({ listKey, id, removeKey, index, count, what, group = 'line' }: {
+  listKey?: string
+  id?: string
+  removeKey?: string
+  index?: number
+  count?: number
+  what: string
+  group?: 'line' | 'sec'
+}) {
+  const editing = useContext(EditingContext)
+  if (!editing) return null
+  const canMove = listKey && id && editing.onMove && count !== undefined && count > 1
+  const btn = 'flex h-6 w-6 items-center justify-center rounded text-xs text-neutral-600 hover:bg-atom-aqua disabled:opacity-25'
+  const show = group === 'sec' ? 'group-hover/sec:flex' : 'group-hover/line:flex'
+  return (
+    <span className={`absolute -top-3 right-0 z-10 hidden items-center rounded-md border border-neutral-200 bg-white font-sans font-normal shadow ${show}`}>
+      {canMove && (
+        <>
+          <button type="button" className={btn} disabled={index === 0} onClick={() => editing.onMove!(listKey!, id!, -1)} title={`Move ${what} up`}>↑</button>
+          <button type="button" className={btn} disabled={index === count! - 1} onClick={() => editing.onMove!(listKey!, id!, 1)} title={`Move ${what} down`}>↓</button>
+        </>
+      )}
+      {removeKey && editing.onRemove && (
+        <button type="button" className={`${btn} hover:text-red-600`} onClick={() => editing.onRemove!(removeKey)} title={`Remove this ${what}`}>✕</button>
+      )}
+    </span>
+  )
+}
+
+/** "+ Add …" link at the end of a list (edit mode only). */
+function Add({ listKey, label }: { listKey: string; label: string }) {
+  const editing = useContext(EditingContext)
+  if (!editing?.onAdd) return null
+  return (
+    <button type="button" onClick={() => editing.onAdd!(listKey)} className="mt-1 ml-9 font-sans text-xs text-neutral-400 hover:text-atom-teal">
+      + {label}
+    </button>
+  )
+}
+
+/** A removable paragraph. */
+function Line({ k, text, className = '' }: { k: string; text: string; className?: string }) {
+  if (!text) return null
+  return (
+    <p className={`group/line relative ${className}`}>
+      <Tools removeKey={k} what="line" />
+      <E k={k} text={text} />
+    </p>
+  )
+}
+
+/** Section wrapper: heading plus a move/remove toolbar for the whole section. */
+function Section({ id, index, count, title, children }: { id: SectionKey; index: number; count: number; title?: string; children: ReactNode }) {
+  return (
+    <section className="group/sec relative mt-7">
+      <Tools listKey="sections" id={id} removeKey={`sec:${id}`} index={index} count={count} what="section" group="sec" />
+      {title && <H>{title}</H>}
+      {children}
+    </section>
+  )
+}
+
+function ScopeSection({ doc }: { doc: QuoteDoc }) {
+  return (
+    <>
+      <Line k="intro" text={doc.intro} />
+      {doc.phases.map((ph) => (
+        <div key={ph.group} className="mt-3">
+          {doc.showPhaseHeadings && <p className="mt-4 mb-1 font-bold text-atom-teal"><E k={`phase:${ph.group}`} text={ph.title} /></p>}
+          <ol className="ml-6 space-y-1">
+            {ph.items.map((it, i) => (
+              <li key={it.id} className="group/line relative flex gap-2">
+                <Tools listKey={ph.listKey} id={it.id} removeKey={it.id} index={i} count={ph.items.length} what="point" />
+                <span className="w-7 shrink-0 text-right">{it.n}.</span>
+                <span className="flex-1"><E k={it.key} text={it.text} /></span>
+              </li>
+            ))}
+          </ol>
+          <Add listKey={ph.listKey} label="Add point" />
+        </div>
+      ))}
+    </>
+  )
+}
+
+function FeesSection({ doc }: { doc: QuoteDoc }) {
+  return (
+    <>
+      <p><E k={doc.model === 'retainer' ? 'fees:retainer' : 'fees:milestone'} text={doc.feesText} /></p>
+      {doc.feeLines.map((l) => <Line key={l.key} k={l.key} text={l.text} className="mt-3" />)}
+      {doc.tranches && (
+        <>
+          <Line k="tranchesIntro" text={doc.tranchesIntro ? `**${doc.tranchesIntro}**` : ''} className="mt-4" />
+          <Table headers={['Sr.No.', 'Milestone', '% of Fees', 'Amount']} widths={['12%', '48%', '18%', '22%']}>
+            {doc.tranches.rows.map((r, i) => (
+              <Row key={r.id} listKey="tranches" id={r.id} index={i} count={doc.tranches!.rows.length} what="tranche"
+                cells={[r.n, r.name, `${r.pct}%`, r.amount]} />
+            ))}
+            <Row bold cells={['', 'Total', `${doc.tranches.totalPct}%`, doc.tranches.totalAmount]} />
+          </Table>
+        </>
+      )}
+      {doc.gstSummary && (
+        <div className="group/line relative mt-2 ml-auto w-fit">
+          <Tools removeKey="gstSummary" what="GST summary" />
+          <table className="text-[13px]">
+            <tbody>
+              <tr><td className="pr-6">Fees</td><td className="text-right">{doc.gstSummary.fee}</td></tr>
+              <tr><td className="pr-6">{doc.gstSummary.gstLabel}</td><td className="text-right">{doc.gstSummary.gst}</td></tr>
+              <tr className="font-bold"><td className="pr-6">Total</td><td className="text-right">{doc.gstSummary.total}</td></tr>
+            </tbody>
+          </table>
+        </div>
+      )}
+    </>
+  )
+}
+
+function TimelineSection({ doc }: { doc: QuoteDoc }) {
+  const rows = doc.timeline.rows
+  return (
+    <>
+      <Table headers={['Sr.No.', 'Actionables', 'Timeline']} widths={['12%', '58%', '30%']}>
+        {rows.map((r, i) => (
+          <Row key={r.id} listKey="timeline" id={r.id} index={i} count={rows.length} what="row"
+            cells={[r.n, <E k={r.labelKey} text={r.label} />, <E k={`tlp:${r.id}`} text={r.period} />]} />
+        ))}
+        <Row bold cells={['', 'Total', <E k="tl:total" text={doc.timeline.total} />]} />
+      </Table>
+      <Add listKey="timeline" label="Add row" />
+    </>
+  )
+}
+
+function CostsSection({ doc }: { doc: QuoteDoc }) {
+  const rows = doc.costs?.rows ?? []
+  return (
+    <>
+      <Table headers={['Sr. No.', 'Areas of Work', 'Fees / Costs']} widths={['12%', '58%', '30%']}>
+        {rows.map((r, i) => (
+          <Row key={r.id} listKey="costs" id={r.id} index={i} count={rows.length} what="row"
+            cells={[r.n, <E k={r.labelKey} text={r.label} />, <E k={r.valueKey} text={r.value} />]} />
+        ))}
+      </Table>
+      <Add listKey="costs" label="Add row" />
+    </>
+  )
+}
+
+function TermsSection({ doc }: { doc: QuoteDoc }) {
+  return (
+    <>
+      <Line k="termsIntro" text={doc.assumptionsIntro} />
+      <ol className="mt-2 ml-4 space-y-1">
+        {doc.assumptions.map((a, i) => (
+          <li key={a.id} className="group/line relative flex gap-2">
+            <Tools listKey="terms" id={a.id} removeKey={a.id} index={i} count={doc.assumptions.length} what="term" />
+            <span className="w-9 shrink-0 text-right">{a.roman}.</span>
+            <span className="flex-1"><E k={a.key} text={a.text} /></span>
+          </li>
+        ))}
+      </ol>
+      <Add listKey="terms" label="Add term" />
+    </>
+  )
+}
+
+function ClosingSection({ doc }: { doc: QuoteDoc }) {
+  return (
+    <>
+      <Line k="validity" text={doc.validity} />
+      <Line k="mouNote" text={doc.mouNote} className="mt-4" />
+    </>
+  )
+}
+
+const SECTION_BODY: Record<SectionKey, (p: { doc: QuoteDoc }) => ReactNode> = {
+  scope: ScopeSection,
+  fees: FeesSection,
+  timeline: TimelineSection,
+  costs: CostsSection,
+  terms: TermsSection,
+  closing: ClosingSection,
+}
+
+/** The quote drawn as a page, in the same order as the PDF. */
+export function QuotePreview({ doc, company, editing }: { doc: QuoteDoc; company: CompanySettings; editing?: PreviewEditing }) {
+  return (
+    <EditingContext.Provider value={editing}>
+      <article className="quote-page mx-auto w-full max-w-[820px] bg-white px-6 py-8 font-serif text-[14px] leading-relaxed text-neutral-900 shadow-sm ring-1 ring-neutral-200 sm:px-14 sm:py-12">
+        <Letterhead company={company} />
+        <p className="mt-6 text-right"><b>Date:</b> {doc.date}</p>
+        {doc.quoteNumber && <p className="text-right text-xs text-neutral-500">Ref: {doc.quoteNumber}</p>}
+        <p className="mt-4"><E k="to" text={doc.to} /></p>
+        <p className="mt-4"><b>Subject:</b> <E k="subject" text={doc.subject} /></p>
+
+        {doc.sections.map((id, i) => {
+          const Body = SECTION_BODY[id]
+          return (
+            <Section key={id} id={id} index={i} count={doc.sections.length} title={id === 'closing' ? undefined : SECTION_TITLES[id]}>
+              <Body doc={doc} />
+            </Section>
+          )
+        })}
+
+        <p className="mt-6">Yours Sincerely,</p>
+        <p className="mt-4">{doc.signoff.name}<br />{doc.signoff.title}<br />{doc.signoff.company}</p>
+        <Footer company={company} />
+      </article>
+    </EditingContext.Provider>
   )
 }
 
@@ -269,27 +270,42 @@ export function Footer({ company }: { company: CompanySettings }) {
 }
 
 export function H({ children }: { children: ReactNode }) {
-  return <h3 className="mt-7 mb-2 font-bold text-atom-ink">{children}</h3>
+  return <h3 className="mb-2 font-bold text-atom-ink">{children}</h3>
 }
 
-export function Th({ children, w }: { children?: ReactNode; w?: string }) {
-  return <th style={{ width: w }} className="border border-neutral-400 px-2 py-1 text-left font-bold">{children}</th>
-}
-
-export function Td({ children }: { children?: ReactNode }) {
-  return <td className="border border-neutral-400 px-2 py-1 align-top">{children}</td>
-}
-
-export function Table({ headers, widths, rows, total }: { headers: string[]; widths: string[]; rows: string[][]; total?: string[] }) {
+function Table({ headers, widths, children }: { headers: string[]; widths: string[]; children: ReactNode }) {
   return (
     <table className="mt-2 w-full border-collapse text-[13px]">
       <thead>
-        <tr className="bg-atom-teal/10">{headers.map((h, i) => <Th key={h} w={widths[i]}>{h}</Th>)}</tr>
+        <tr className="bg-atom-teal/10">
+          {headers.map((h, i) => (
+            <th key={h} style={{ width: widths[i] }} className="border border-neutral-400 px-2 py-1 text-left font-bold">{h}</th>
+          ))}
+        </tr>
       </thead>
-      <tbody>
-        {rows.map((r, i) => <tr key={i}>{r.map((c, j) => <Td key={j}>{c}</Td>)}</tr>)}
-        {total && <tr className="font-bold">{total.map((c, j) => <Td key={j}>{c}</Td>)}</tr>}
-      </tbody>
+      <tbody>{children}</tbody>
     </table>
+  )
+}
+
+/** Table row; the last cell carries the hover toolbar in edit mode. */
+function Row({ cells, listKey, id, index, count, what = 'row', bold }: {
+  cells: ReactNode[]
+  listKey?: string
+  id?: string
+  index?: number
+  count?: number
+  what?: string
+  bold?: boolean
+}) {
+  return (
+    <tr className={`group/line ${bold ? 'font-bold' : ''}`}>
+      {cells.map((c, i) => (
+        <td key={i} className={`border border-neutral-400 px-2 py-1 align-top ${i === cells.length - 1 ? 'relative' : ''}`}>
+          {i === cells.length - 1 && id && <Tools listKey={listKey} id={id} removeKey={id} index={index} count={count} what={what} />}
+          {c}
+        </td>
+      ))}
+    </tr>
   )
 }
