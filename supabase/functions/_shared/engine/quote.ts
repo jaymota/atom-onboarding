@@ -55,6 +55,8 @@ export interface QuoteInput {
   customItems: CustomItem[]
   timeline: Record<string, { label?: string; start?: number; end?: number }>
   removedTimelineRows: string[]
+  /** Timeline rows Jay added by hand. */
+  customTimeline?: { id: string; label: string; start?: number; end?: number }[]
   /** Explicit tick/untick of assumption clauses (otherwise the model default applies). */
   assumptionsChecked: Record<string, boolean>
   customAssumptions: { id: string; text: string }[]
@@ -285,6 +287,18 @@ export function buildQuoteDoc(input: QuoteInput, settings: Settings): QuoteDoc {
     const label = input.texts[labelKey] ?? baseText(settings, labelKey, def.label)
     rows.push({ id: def.id, n: 0, labelKey, label, period: '', start, end, openEnded: !!def.openEnded })
   }
+  // Rows Jay added by hand go before the open-ended "Commercial Run Support" row.
+  const custom: DocTimelineRow[] = []
+  for (const c of input.customTimeline ?? []) {
+    if (input.removedTimelineRows.includes(c.id)) continue
+    const labelKey = `tl:${c.id}`
+    const ov = input.timeline[c.id] ?? {}
+    const start = ov.start ?? c.start ?? 0
+    const end = ov.end ?? c.end ?? 0
+    custom.push({ id: c.id, n: 0, labelKey, label: input.texts[labelKey] ?? c.label, period: '', start, end, openEnded: false, unscheduled: !(start && end) })
+  }
+  const openIdx = rows.findIndex((r) => r.openEnded)
+  rows.splice(openIdx === -1 ? rows.length : openIdx, 0, ...custom)
   // Standalone services: scheduled by hand (weeks optional).
   for (const a of addOnsOn) {
     if (input.removedTimelineRows.includes(a.id)) continue

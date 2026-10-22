@@ -186,3 +186,15 @@ describe('Re-ordering', () => {
     expect(doc.assumptions[0].roman).toBe('i')
   })
 })
+
+describe('Custom timeline rows', () => {
+  it('go before the open-ended row, count towards the total, and show "As agreed" without weeks', () => {
+    const base = newQuoteInput(settings, { productDescription: 'chips', variants: 1, fee: 1, feeConfirmed: true })
+    const input = { ...base, customTimeline: [{ id: 'ct-1', label: 'Consumer testing', start: 38, end: 44 }, { id: 'ct-2', label: 'Launch support' }] }
+    const doc = buildQuoteDoc(input, settings)
+    const labels = doc.timeline.rows.map((r) => r.label)
+    expect(labels.slice(-3)).toEqual(['Consumer testing', 'Launch support', 'Commercial Run Support'])
+    expect(doc.timeline.rows.find((r) => r.id === 'ct-2')!.period).toBe('As agreed')
+    expect(doc.timeline.totalWeeks).toBe(44)
+  })
+})

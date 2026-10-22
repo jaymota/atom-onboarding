@@ -273,6 +273,7 @@ export default function QuoteBuilder() {
         <fieldset disabled={locked} className="space-y-4 xl:max-h-[calc(100svh-150px)] xl:overflow-y-auto xl:pr-1">
           <Controls
             input={input}
+            doc={doc}
             set={set}
             setModule={setModule}
             setComplexity={setComplexity}
@@ -320,7 +321,8 @@ export default function QuoteBuilder() {
               onMoveTerm: (termId, dir) =>
                 set({ assumptionOrder: moveInList(doc.assumptions.map((a) => a.id), termId, dir) }),
               onRemoveRow: (table, rowId) => {
-                if (table === 'timeline') set({ removedTimelineRows: [...input.removedTimelineRows, rowId] })
+                if (table === 'timeline' && rowId.startsWith('ct-')) set({ customTimeline: (input.customTimeline ?? []).filter((c) => c.id !== rowId) })
+                else if (table === 'timeline') set({ removedTimelineRows: [...input.removedTimelineRows, rowId] })
                 else if (table === 'tranche') set({ tranches: input.tranches.filter((t) => t.id !== rowId) })
                 else if (rowId.startsWith('cc-')) set({ customCosts: input.customCosts.filter((c) => c.id !== rowId) })
                 else set({ removedCosts: [...input.removedCosts, rowId] })
@@ -417,8 +419,9 @@ function NumberField({ label, value, onChange, min = 0, suffix }: { label: strin
   )
 }
 
-function Controls({ input, set, setModule, setComplexity, setModel, setStart, resetText }: {
+export function Controls({ input, doc, set, setModule, setComplexity, setModel, setStart, resetText }: {
   input: QuoteInput
+  doc: ReturnType<typeof buildQuoteDoc>
   set: (p: Partial<QuoteInput>) => void
   setModule: (m: ModuleId, on: boolean) => void
   setComplexity: (c: Complexity) => void
@@ -614,37 +617,51 @@ function Controls({ input, set, setModule, setComplexity, setModel, setStart, re
         )}
       </Section>
 
-      <Section title="6. Timeline (weeks)" defaultOpen={false} right={
-        Object.keys(input.timeline).length > 0 ? <button type="button" className="text-xs text-neutral-500 underline" onClick={() => set({ timeline: {} })}>reset to preset</button> : null
+      <Section title="6. Timeline" defaultOpen={false} right={
+        Object.keys(input.timeline).length > 0 ? <button type="button" className="text-xs text-neutral-500 underline" onClick={() => set({ timeline: {} })}>reset weeks to preset</button> : null
       }>
-        <p className="text-xs text-neutral-500">Filled from the {COMPLEXITY_LABELS[input.complexity]} preset. Change any week; edit labels by clicking them in the preview.</p>
-        {ADD_ONS.filter((a) => (input.addOns ?? []).includes(a.id)).map((a) => {
-          const ov = input.timeline[a.id] ?? {}
-          const setRange = (k: 'start' | 'end', v: string) => set({ timeline: { ...input.timeline, [a.id]: { ...ov, [k]: v === '' ? undefined : Number(v) } } })
-          return (
-            <div key={a.id} className="grid grid-cols-[1fr_auto] items-center gap-2 text-sm">
-              <span className="text-xs">{a.name} <span className="text-neutral-400">(blank = “As agreed”)</span></span>
-              <span className="flex items-center gap-1 text-xs">
-                W<input type="number" min={1} value={ov.start ?? ''} onChange={(e) => setRange('start', e.target.value)} className={`${inputClass} w-16 px-2 py-1`} />
-                –W<input type="number" min={1} value={ov.end ?? ''} onChange={(e) => setRange('end', e.target.value)} className={`${inputClass} w-16 px-2 py-1`} />
-              </span>
-            </div>
-          )
-        })}
-        {TIMELINE_ROWS.filter((r) => input.modules[r.module] && !r.openEnded).map((r) => {
-          const auto = autoTimeline.find((a) => a.id === r.id)
-          const ov = input.timeline[r.id] ?? {}
-          const setRange = (k: 'start' | 'end', n: number) => set({ timeline: { ...input.timeline, [r.id]: { ...ov, [k]: n } } })
-          return (
-            <div key={r.id} className="grid grid-cols-[1fr_auto] items-center gap-2 text-sm">
-              <span className="text-xs">{r.label}</span>
-              <span className="flex items-center gap-1 text-xs">
-                W<input type="number" min={1} value={ov.start ?? auto?.start ?? 1} onChange={(e) => setRange('start', Number(e.target.value) || 1)} className={`${inputClass} w-16 px-2 py-1`} />
-                –W<input type="number" min={1} value={ov.end ?? auto?.end ?? 1} onChange={(e) => setRange('end', Number(e.target.value) || 1)} className={`${inputClass} w-16 px-2 py-1`} />
-              </span>
-            </div>
-          )
-        })}
+        <p className="text-xs text-neutral-500">Weeks start from the {COMPLEXITY_LABELS[input.complexity]} preset. Edit any activity name or week, remove a row with ✕, or add your own. Leave weeks blank on a new row to show “As agreed”.</p>
+        <div className="space-y-2">
+          {doc.timeline.rows.map((r) => {
+            const isCustom = r.id.startsWith('ct-')
+            const ov = input.timeline[r.id] ?? {}
+            const auto = autoTimeline.find((a) => a.id === r.id)
+            const startVal = ov.start ?? (r.unscheduled ? undefined : auto?.start ?? r.start)
+            const endVal = ov.end ?? (r.unscheduled ? undefined : auto?.end ?? r.end)
+            const setRange = (k: 'start' | 'end', v: string) =>
+              set({ timeline: { ...input.timeline, [r.id]: { ...ov, [k]: v === '' ? undefined : Math.max(1, Number(v) || 1) } } })
+            const remove = () =>
+              isCustom
+                ? set({ customTimeline: (input.customTimeline ?? []).filter((c) => c.id !== r.id) })
+                : set({ removedTimelineRows: [...input.removedTimelineRows, r.id] })
+            return (
+              <div key={r.id} className="flex items-center gap-2">
+                <TextInput
+                  value={r.label}
+                  onChange={(e) => set({ texts: { ...input.texts, [r.labelKey]: e.target.value } })}
+                  className="min-w-0 flex-1 px-2 py-1.5 text-xs"
+                  aria-label="Activity"
+                />
+                {r.openEnded ? (
+                  <span className="w-[8.5rem] text-center text-xs text-neutral-500">from week {r.start} onwards</span>
+                ) : (
+                  <span className="flex shrink-0 items-center gap-1 text-xs">
+                    W<span className="w-14"><input type="number" min={1} value={startVal ?? ''} onChange={(e) => setRange('start', e.target.value)} className={`${inputClass} px-1.5 py-1.5 text-xs`} aria-label="Start week" /></span>
+                    –<span className="w-14"><input type="number" min={1} value={endVal ?? ''} onChange={(e) => setRange('end', e.target.value)} className={`${inputClass} px-1.5 py-1.5 text-xs`} aria-label="End week" /></span>
+                  </span>
+                )}
+                <button type="button" onClick={remove} title="Remove this row" className="px-1 text-neutral-400 hover:text-red-600">✕</button>
+              </div>
+            )
+          })}
+        </div>
+        <div className="flex items-center justify-between">
+          <Button size="sm" variant="secondary" onClick={() => set({ customTimeline: [...(input.customTimeline ?? []), { id: uid('ct'), label: 'New activity' }] })}>+ Add row</Button>
+          <span className="text-sm font-medium">{doc.timeline.total}</span>
+        </div>
+        {input.removedTimelineRows.length > 0 && (
+          <button type="button" className="text-xs text-atom-teal underline" onClick={() => set({ removedTimelineRows: [] })}>Bring back removed rows ({input.removedTimelineRows.length})</button>
+        )}
       </Section>
 
       <Section title="7. Scope items" defaultOpen={false}>

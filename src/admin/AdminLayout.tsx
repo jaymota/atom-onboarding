@@ -9,7 +9,8 @@ interface SettingsCtx {
   reload: () => Promise<void>
 }
 
-const Ctx = createContext<SettingsCtx | null>(null)
+export const SettingsContext = createContext<SettingsCtx | null>(null)
+const Ctx = SettingsContext
 
 /** Company settings, prices and wording — loaded once for the admin area. */
 export function useSettings(): SettingsCtx {
