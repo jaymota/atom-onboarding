@@ -53,6 +53,16 @@ interface ClientRow {
   details: Record<string, unknown>
 }
 
+/** Move `id` one place up (-1) or down (1) in a list of ids. */
+function moveInList(ids: string[], id: string, dir: -1 | 1): string[] {
+  const out = [...ids]
+  const i = out.indexOf(id)
+  const j = i + dir
+  if (i < 0 || j < 0 || j >= out.length) return out
+  ;[out[i], out[j]] = [out[j], out[i]]
+  return out
+}
+
 let idCounter = 0
 const uid = (p: string) => `${p}-${Date.now().toString(36)}${(idCounter++).toString(36)}`
 
@@ -277,7 +287,7 @@ export default function QuoteBuilder() {
           {doc.warnings.length > 0 && (
             <div className="mb-3"><Alert tone="warn">{doc.warnings.join(' ')}</Alert></div>
           )}
-          <p className="mb-2 text-xs text-neutral-500">Click any text in the quote to edit it. Edited text is underlined with dots.</p>
+          <p className="mb-2 text-xs text-neutral-500">Click any text to edit it (edited text is underlined with dots). Hover over a point to move it ↑ ↓ or remove it ✕. Removed points can be brought back in sections 7 and 9.</p>
           <QuotePreview
             doc={doc}
             company={settings.company}
@@ -289,6 +299,16 @@ export default function QuoteBuilder() {
                 itemId.startsWith('ci-')
                   ? set({ customItems: input.customItems.filter((c) => c.id !== itemId) })
                   : set({ removedItems: [...input.removedItems, itemId] }),
+              onMoveItem: (group, itemId, dir) => {
+                const ids = doc.phases.find((p) => p.group === group)?.items.map((i) => i.id) ?? []
+                set({ itemOrder: { ...(input.itemOrder ?? {}), [group]: moveInList(ids, itemId, dir) } })
+              },
+              onRemoveTerm: (termId) =>
+                termId.startsWith('ca-')
+                  ? set({ customAssumptions: input.customAssumptions.filter((c) => c.id !== termId) })
+                  : set({ assumptionsChecked: { ...input.assumptionsChecked, [termId]: false } }),
+              onMoveTerm: (termId, dir) =>
+                set({ assumptionOrder: moveInList(doc.assumptions.map((a) => a.id), termId, dir) }),
             }}
           />
         </div>
@@ -606,7 +626,10 @@ function Controls({ input, set, setModule, setComplexity, setModel, setStart, re
       </Section>
 
       <Section title="7. Scope items" defaultOpen={false}>
-        <p className="text-xs text-neutral-500">Click an item in the preview to reword it, or hover and press ✕ to remove it.</p>
+        <p className="text-xs text-neutral-500">Click a point in the preview to reword it, or hover over it to move it ↑ ↓ or remove it ✕.</p>
+        {Object.keys(input.itemOrder ?? {}).length > 0 && (
+          <button type="button" className="text-xs text-atom-teal underline" onClick={() => set({ itemOrder: {} })}>Reset points to the standard order</button>
+        )}
         {input.removedItems.length > 0 && (
           <div>
             <Label>Removed items</Label>
@@ -667,7 +690,10 @@ function Controls({ input, set, setModule, setComplexity, setModel, setStart, re
       </Section>
 
       <Section title="9. Terms & assumptions" defaultOpen={false}>
-        <p className="text-xs text-neutral-500">Pre-ticked for a {input.model} quote. Click a clause in the preview to reword it.</p>
+        <p className="text-xs text-neutral-500">Pre-ticked for a {input.model} quote. Click a term in the preview to reword it, or hover over it to move ↑ ↓ or remove ✕ (untick here to remove, tick to bring back).</p>
+        {(input.assumptionOrder ?? []).length > 0 && (
+          <button type="button" className="text-xs text-atom-teal underline" onClick={() => set({ assumptionOrder: [] })}>Reset terms to the standard order</button>
+        )}
         {ASSUMPTIONS.filter((a) => assumptionAvailable(a.id, input)).map((a) => {
           const checked = input.assumptionsChecked[a.id] ?? defaultAssumptionChecked(a.id, input)
           const text = input.texts[`assume:${a.id}`] ?? fill(settings.wording[`assume:${a.id}`] || `**${a.topic}:** ${a.text}`, vars).replace(/\*\*/g, '')

@@ -50,12 +50,16 @@ export interface QuoteInput {
   /** Text edits made by Jay, keyed by element id (e.g. "item:m2-1", "subject"). */
   texts: Record<string, string>
   removedItems: string[]
+  /** Jay's own order of scope points, per phase (ids). Points not listed keep their place at the end. */
+  itemOrder?: Record<string, string[]>
   customItems: CustomItem[]
   timeline: Record<string, { label?: string; start?: number; end?: number }>
   removedTimelineRows: string[]
   /** Explicit tick/untick of assumption clauses (otherwise the model default applies). */
   assumptionsChecked: Record<string, boolean>
   customAssumptions: { id: string; text: string }[]
+  /** Jay's own order of the terms (ids). */
+  assumptionOrder?: string[]
   removedCosts: string[]
   customCosts: CustomRow[]
 }
@@ -110,6 +114,17 @@ export interface QuoteDoc {
   mouNote: string
   signoff: { name: string; title: string; company: string }
   warnings: string[]
+}
+
+/** Re-order items in place to follow `order` (ids); anything not listed keeps its relative place after. */
+function sortByOrder<T extends { id: string }>(items: T[], order?: string[]) {
+  if (!order?.length) return
+  const pos = (id: string) => {
+    const i = order.indexOf(id)
+    return i === -1 ? Number.MAX_SAFE_INTEGER : i
+  }
+  const original = items.map((it) => it.id)
+  items.sort((a, b) => pos(a.id) - pos(b.id) || original.indexOf(a.id) - original.indexOf(b.id))
 }
 
 export function perMonth(model: Model): string {
@@ -245,6 +260,7 @@ export function buildQuoteDoc(input: QuoteInput, settings: Settings): QuoteDoc {
       items.push({ id: c.id, key: `item:${c.id}`, n: 0, text: fill(input.texts[`item:${c.id}`] ?? c.text, vars), custom: true })
     }
     if (!items.length) continue
+    sortByOrder(items, input.itemOrder?.[group])
     if (group !== 'addons') phaseNo += 1
     items.forEach((it) => (it.n = ++itemNo))
     const titleKey = `phase:${group}`
@@ -414,6 +430,7 @@ export function buildQuoteDoc(input: QuoteInput, settings: Settings): QuoteDoc {
     if (input.assumptionsChecked[c.id] === false) continue
     clauses.push({ id: c.id, key: `assume:${c.id}`, roman: '', text: fill(input.texts[`assume:${c.id}`] ?? c.text, vars), custom: true, inMou: true })
   }
+  sortByOrder(clauses, input.assumptionOrder)
   clauses.forEach((c, i) => (c.roman = toRoman(i + 1)))
   doc.assumptions = clauses
 

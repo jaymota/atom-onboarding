@@ -174,3 +174,15 @@ describe('MOU', () => {
     expect(mou.sections.find((s) => s.key === 'background')!.blocks[0]).toMatchObject({ type: 'p' })
   })
 })
+
+describe('Re-ordering', () => {
+  it('follows Jay’s order for scope points and terms', () => {
+    const base = newQuoteInput(settings, { productDescription: 'chips', variants: 1, fee: 1, feeConfirmed: true })
+    const input = { ...base, itemOrder: { M1: ['m1-3', 'm1-1'] }, assumptionOrder: ['a-handover'] }
+    const doc = buildQuoteDoc(input, settings)
+    expect(doc.phases[0].items.map((i) => i.id)).toEqual(['m1-3', 'm1-1', 'm1-2'])
+    expect(doc.phases[0].items.map((i) => i.n)).toEqual([1, 2, 3])
+    expect(doc.assumptions[0].id).toBe('a-handover')
+    expect(doc.assumptions[0].roman).toBe('i')
+  })
+})

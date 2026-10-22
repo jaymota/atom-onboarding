@@ -8,6 +8,27 @@ export interface PreviewEditing {
   onReset: (key: string) => void
   isEdited: (key: string) => boolean
   onRemoveItem?: (id: string) => void
+  onMoveItem?: (group: string, id: string, dir: -1 | 1) => void
+  onRemoveTerm?: (id: string) => void
+  onMoveTerm?: (id: string, dir: -1 | 1) => void
+}
+
+/** Small ↑ ↓ ✕ buttons shown when hovering a point (edit mode only). */
+function PointTools({ first, last, onMove, onRemove, what }: {
+  first: boolean
+  last: boolean
+  onMove: (dir: -1 | 1) => void
+  onRemove: () => void
+  what: string
+}) {
+  const btn = 'flex h-7 w-7 items-center justify-center rounded text-sm text-neutral-700 hover:bg-atom-aqua disabled:opacity-25'
+  return (
+    <span className="absolute -left-[5.5rem] -top-0.5 hidden items-center rounded-md border border-neutral-200 bg-white font-sans text-neutral-500 shadow-sm group-hover:flex">
+      <button type="button" className={btn} disabled={first} onClick={() => onMove(-1)} title={`Move ${what} up`}>↑</button>
+      <button type="button" className={btn} disabled={last} onClick={() => onMove(1)} title={`Move ${what} down`}>↓</button>
+      <button type="button" className={`${btn} hover:text-red-600`} onClick={onRemove} title={`Remove this ${what}`}>✕</button>
+    </span>
+  )
 }
 
 /** The quote drawn as a page — the same layout as the PDF. */
@@ -29,19 +50,19 @@ export function QuotePreview({ doc, company, editing }: { doc: QuoteDoc; company
         <div key={ph.group} className="mt-3">
           {doc.showPhaseHeadings && <p className="mt-4 mb-1 font-bold text-atom-teal">{ph.title}</p>}
           <ol className="ml-6 space-y-1">
-            {ph.items.map((it) => (
+            {ph.items.map((it, idx) => (
               <li key={it.id} className="group relative flex gap-2">
+                {editing?.onRemoveItem && (
+                  <PointTools
+                    what="point"
+                    first={idx === 0}
+                    last={idx === ph.items.length - 1}
+                    onMove={(dir) => editing.onMoveItem?.(ph.group, it.id, dir)}
+                    onRemove={() => editing.onRemoveItem!(it.id)}
+                  />
+                )}
                 <span className="w-7 shrink-0 text-right">{it.n}.</span>
                 <span className="flex-1"><E k={it.key} text={it.text} /></span>
-                {editing?.onRemoveItem && (
-                  <button
-                    onClick={() => editing.onRemoveItem!(it.id)}
-                    title="Remove this item"
-                    className="invisible absolute -right-6 top-0 rounded px-1 font-sans text-xs text-neutral-400 hover:text-red-600 group-hover:visible"
-                  >
-                    ✕
-                  </button>
-                )}
               </li>
             ))}
           </ol>
@@ -122,8 +143,17 @@ export function QuotePreview({ doc, company, editing }: { doc: QuoteDoc; company
       <H>Terms & Assumptions</H>
       <p><E k={doc.model === 'retainer' ? 'assumptions:retainer' : 'assumptions:milestone'} text={doc.assumptionsIntro} /></p>
       <ol className="mt-2 ml-4 space-y-1">
-        {doc.assumptions.map((a) => (
-          <li key={a.id} className="flex gap-2">
+        {doc.assumptions.map((a, idx) => (
+          <li key={a.id} className="group relative flex gap-2">
+            {editing?.onRemoveTerm && (
+              <PointTools
+                what="term"
+                first={idx === 0}
+                last={idx === doc.assumptions.length - 1}
+                onMove={(dir) => editing.onMoveTerm?.(a.id, dir)}
+                onRemove={() => editing.onRemoveTerm!(a.id)}
+              />
+            )}
             <span className="w-9 shrink-0 text-right">{a.roman}.</span>
             <span className="flex-1"><E k={a.key} text={a.text} /></span>
           </li>
