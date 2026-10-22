@@ -6,7 +6,7 @@ import {
 } from '../../supabase/functions/_shared/engine/content.ts'
 import {
   type QuoteInput, assumptionAvailable, buildQuoteDoc, computeTimeline, defaultAssumptionChecked, defaultTranches,
-  diffQuoteInputs, quoteVars,
+  diffQuoteInputs, quoteVars, LINE_LABELS,
 } from '../../supabase/functions/_shared/engine/quote.ts'
 import { ALL_FIELDS, type Answers } from '../../supabase/functions/_shared/engine/intake.ts'
 import { amountInWords, fill, formatINR } from '../../supabase/functions/_shared/engine/format.ts'
@@ -287,7 +287,8 @@ export default function QuoteBuilder() {
           {doc.warnings.length > 0 && (
             <div className="mb-3"><Alert tone="warn">{doc.warnings.join(' ')}</Alert></div>
           )}
-          <p className="mb-2 text-xs text-neutral-500">Click any text to edit it (edited text is underlined with dots). Hover over a point to move it ↑ ↓ or remove it ✕. Removed points can be brought back in sections 7 and 9.</p>
+          <p className="mb-2 text-xs text-neutral-500">Click any text to edit it (edited text is underlined with dots). Hover over any point, table row or line to remove it ✕ (points and terms can also be moved ↑ ↓).</p>
+          <RemovedPanel input={input} set={set} />
           <QuotePreview
             doc={doc}
             company={settings.company}
@@ -309,6 +310,18 @@ export default function QuoteBuilder() {
                   : set({ assumptionsChecked: { ...input.assumptionsChecked, [termId]: false } }),
               onMoveTerm: (termId, dir) =>
                 set({ assumptionOrder: moveInList(doc.assumptions.map((a) => a.id), termId, dir) }),
+              onRemoveRow: (table, rowId) => {
+                if (table === 'timeline') set({ removedTimelineRows: [...input.removedTimelineRows, rowId] })
+                else if (table === 'tranche') set({ tranches: input.tranches.filter((t) => t.id !== rowId) })
+                else if (rowId.startsWith('cc-')) set({ customCosts: input.customCosts.filter((c) => c.id !== rowId) })
+                else set({ removedCosts: [...input.removedCosts, rowId] })
+              },
+              onHideLine: (key) =>
+                key === 'retainerEstimate'
+                  ? set({ showRetainerEstimate: false })
+                  : key === 'gstSummary'
+                    ? set({ showGstSummary: false })
+                    : set({ hiddenLines: [...(input.hiddenLines ?? []), key] }),
             }}
           />
         </div>
@@ -729,6 +742,47 @@ function Controls({ input, set, setModule, setComplexity, setModel, setStart, re
 }
 
 /* ------------------------------------------------------------------ panels & modals */
+
+/** Everything removed from the document, with one-click restore. */
+function RemovedPanel({ input, set }: { input: QuoteInput; set: (p: Partial<QuoteInput>) => void }) {
+  const tl = input.removedTimelineRows.map((id) => ({
+    id, label: TIMELINE_ROWS.find((r) => r.id === id)?.label ?? ADD_ONS.find((a) => a.id === id)?.name ?? id,
+    restore: () => set({ removedTimelineRows: input.removedTimelineRows.filter((x) => x !== id) }),
+  }))
+  const lines = (input.hiddenLines ?? []).map((k) => ({
+    id: k, label: LINE_LABELS[k] ?? k,
+    restore: () => set({ hiddenLines: (input.hiddenLines ?? []).filter((x) => x !== k) }),
+  }))
+  const items = input.removedItems.map((id) => ({
+    id, label: (SCOPE_ITEMS.find((x) => x.id === id)?.text ?? ADD_ONS.find((a) => a.id === id)?.name ?? id).replace(/\*\*/g, '').slice(0, 70) + '…',
+    restore: () => set({ removedItems: input.removedItems.filter((x) => x !== id) }),
+  }))
+  const costs = input.removedCosts.map((id) => ({
+    id, label: ADDITIONAL_COSTS.find((c) => c.id === id)?.label.replace(/\{[^}]+\}/g, '').slice(0, 60) ?? id,
+    restore: () => set({ removedCosts: input.removedCosts.filter((x) => x !== id) }),
+  }))
+  const all = [
+    ...items.map((x) => ({ ...x, kind: 'Scope point' })),
+    ...tl.map((x) => ({ ...x, kind: 'Timeline row' })),
+    ...costs.map((x) => ({ ...x, kind: 'Cost row' })),
+    ...lines.map((x) => ({ ...x, kind: 'Line' })),
+    ...(input.showGstSummary ? [] : [{ id: 'gst', label: 'GST and total summary', kind: 'Line', restore: () => set({ showGstSummary: true }) }]),
+  ]
+  if (!all.length) return null
+  return (
+    <details className="mb-3 rounded-md border border-neutral-200 bg-white px-3 py-2 text-xs">
+      <summary className="cursor-pointer font-medium text-neutral-700">Removed from this quote ({all.length}) · click to restore</summary>
+      <ul className="mt-2 space-y-1">
+        {all.map((x) => (
+          <li key={`${x.kind}-${x.id}`} className="flex items-center justify-between gap-3">
+            <span><span className="text-neutral-400">{x.kind}:</span> {x.label}</span>
+            <button type="button" className="shrink-0 text-atom-teal underline" onClick={x.restore}>restore</button>
+          </li>
+        ))}
+      </ul>
+    </details>
+  )
+}
 
 function IntakePanel({ client }: { client: ClientRow | null }) {
   if (!client) return null

@@ -19,7 +19,7 @@ export function QuotePdf({ doc, company }: { doc: QuoteDoc; company: CompanySett
         <Rich text={`**Subject:** ${doc.subject}`} style={{ marginTop: 10 }} />
 
         <Text style={s.h}>Scope of Work</Text>
-        <Rich text={doc.intro} style={s.p} />
+        {doc.intro ? <Rich text={doc.intro} style={s.p} /> : null}
         {doc.phases.map((ph) => (
           <View key={ph.group}>
             {doc.showPhaseHeadings ? <Text style={[s.bold, { marginTop: 8, marginBottom: 4, color: TEAL }]} minPresenceAhead={40}>{ph.title}</Text> : null}
@@ -36,7 +36,7 @@ export function QuotePdf({ doc, company }: { doc: QuoteDoc; company: CompanySett
 
         {doc.tranches ? (
           <View wrap={false}>
-            <Rich text={`**${doc.tranchesIntro ?? ''}**`} style={{ marginTop: 8, marginBottom: 2 }} />
+            {doc.tranchesIntro ? <Rich text={`**${doc.tranchesIntro}**`} style={{ marginTop: 8, marginBottom: 2 }} /> : <View style={{ height: 8 }} />}
             <PdfTable
               headers={['Sr.No.', 'Milestone', '% of Fees', 'Amount (INR)']}
               widths={[12, 48, 18, 22]}
@@ -89,8 +89,8 @@ export function QuotePdf({ doc, company }: { doc: QuoteDoc; company: CompanySett
         {doc.assumptions.map((a) => <Item key={a.id} label={`${a.roman}.`} text={a.text} indent={8} labelWidth={30} />)}
 
         <View wrap={false}>
-          <Rich text={doc.validity} style={{ marginTop: 12 }} />
-          <Rich text={doc.mouNote} style={{ marginTop: 10 }} />
+          {doc.validity ? <Rich text={doc.validity} style={{ marginTop: 12 }} /> : null}
+          {doc.mouNote ? <Rich text={doc.mouNote} style={{ marginTop: 10 }} /> : null}
           <Text style={{ marginTop: 14 }}>Yours Sincerely,</Text>
           <Text style={{ marginTop: 12 }}>{doc.signoff.name}</Text>
           <Text>{doc.signoff.title}</Text>

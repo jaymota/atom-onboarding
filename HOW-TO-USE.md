@@ -65,6 +65,8 @@ Work down the left-hand sections:
 
 **To change any wording**, click it in the quote on the right. A small box opens: edit the text, then press **Save**. **Reset to template wording** brings back the original. Use `**double stars**` to make words bold.
 
+**To remove anything** (a scope point, a term, a timeline row, a payment tranche, an extra-cost row, the GST summary, or a single sentence like Validity or the MOU note), hover over it in the quote and click the **✕** on its left. Everything you remove is listed in **“Removed from this quote”** above the preview, with a **restore** link.
+
 **To move or remove a point**, hover over it in the quote. Small **↑ ↓ ✕** buttons appear on its left. This works for scope points and for Terms & Assumptions. Numbers update automatically. Removed points can be brought back in section 7 (scope) or 9 (terms), where there's also a “reset to the standard order” link.
 
 Everything **saves by itself**; watch for “All changes saved” at the top.

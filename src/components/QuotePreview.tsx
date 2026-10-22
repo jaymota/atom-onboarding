@@ -11,6 +11,50 @@ export interface PreviewEditing {
   onMoveItem?: (group: string, id: string, dir: -1 | 1) => void
   onRemoveTerm?: (id: string) => void
   onMoveTerm?: (id: string, dir: -1 | 1) => void
+  /** Remove a table row: timeline, additional cost or payment tranche. */
+  onRemoveRow?: (table: 'timeline' | 'cost' | 'tranche', id: string) => void
+  /** Remove a single sentence/block (e.g. 'validity', 'mouNote'). */
+  onHideLine?: (key: string) => void
+}
+
+/** A ✕ that appears to the left of a table row or line on hover. */
+function RemoveTool({ onRemove, what }: { onRemove: () => void; what: string }) {
+  return (
+    <button
+      type="button"
+      onClick={onRemove}
+      title={`Remove this ${what}`}
+      className="absolute -left-10 top-0 hidden h-7 w-7 items-center justify-center rounded-md border border-neutral-200 bg-white font-sans text-sm text-neutral-700 shadow-sm hover:bg-atom-aqua hover:text-red-600 group-hover:flex"
+    >
+      ✕
+    </button>
+  )
+}
+
+/** A paragraph that can be removed in edit mode. */
+function Line({ k, text, className = '' }: { k: string; text: string; className?: string }) {
+  const editing = useContext(EditingContext)
+  if (!text) return null
+  return (
+    <p className={`group relative ${className}`}>
+      {editing?.onHideLine && <RemoveTool what="line" onRemove={() => editing.onHideLine!(k)} />}
+      <E k={k} text={text} />
+    </p>
+  )
+}
+
+/** Table row whose first cell carries a remove button in edit mode. */
+function Row({ cells, onRemove, bold }: { cells: ReactNode[]; onRemove?: () => void; bold?: boolean }) {
+  return (
+    <tr className={`group ${bold ? 'font-bold' : ''}`}>
+      {cells.map((c, i) => (
+        <td key={i} className={`border border-neutral-400 px-2 py-1 align-top ${i === 0 ? 'relative' : ''}`}>
+          {i === 0 && onRemove && <RemoveTool what="row" onRemove={onRemove} />}
+          {c}
+        </td>
+      ))}
+    </tr>
+  )
 }
 
 /** Small ↑ ↓ ✕ buttons shown when hovering a point (edit mode only). */
@@ -45,7 +89,7 @@ export function QuotePreview({ doc, company, editing }: { doc: QuoteDoc; company
       <p className="mt-4"><b>Subject:</b> <E k="subject" text={doc.subject} /></p>
 
       <H>Scope of Work</H>
-      <p><E k="intro" text={doc.intro} /></p>
+      <Line k="intro" text={doc.intro} />
       {doc.phases.map((ph) => (
         <div key={ph.group} className="mt-3">
           {doc.showPhaseHeadings && <p className="mt-4 mb-1 font-bold text-atom-teal">{ph.title}</p>}
@@ -71,28 +115,36 @@ export function QuotePreview({ doc, company, editing }: { doc: QuoteDoc; company
 
       <H>Fees</H>
       <p><E k={doc.model === 'retainer' ? 'fees:retainer' : 'fees:milestone'} text={doc.feesText} /></p>
-      {doc.retainerPayable && <p className="mt-3 font-bold"><E k="retainerPayable" text={doc.retainerPayable} /></p>}
-      {doc.retainerEstimate && <p className="mt-2"><E k="retainerEstimate" text={doc.retainerEstimate} /></p>}
+      <Line k="retainerPayable" text={doc.retainerPayable ?? ''} className="mt-3 font-bold" />
+      <Line k="retainerEstimate" text={doc.retainerEstimate ?? ''} className="mt-2" />
 
       {doc.tranches && (
         <>
-          <p className="mt-4 font-bold"><E k="tranchesIntro" text={doc.tranchesIntro ?? ''} /></p>
-          <Table
-            headers={['Sr.No.', 'Milestone', '% of Fees', 'Amount']}
-            widths={['12%', '48%', '18%', '22%']}
-            rows={doc.tranches.rows.map((r) => [String(r.n), r.name, `${r.pct}%`, r.amount])}
-            total={['', 'Total', `${doc.tranches.totalPct}%`, doc.tranches.totalAmount]}
-          />
+          <Line k="tranchesIntro" text={doc.tranchesIntro ?? ''} className="mt-4 font-bold" />
+          <table className="mt-2 w-full border-collapse text-[13px]">
+            <thead>
+              <tr className="bg-atom-teal/10"><Th w="12%">Sr.No.</Th><Th w="48%">Milestone</Th><Th w="18%">% of Fees</Th><Th w="22%">Amount</Th></tr>
+            </thead>
+            <tbody>
+              {doc.tranches.rows.map((r) => (
+                <Row key={r.id} cells={[r.n, r.name, `${r.pct}%`, r.amount]} onRemove={editing?.onRemoveRow ? () => editing.onRemoveRow!('tranche', r.id) : undefined} />
+              ))}
+              <Row bold cells={['', 'Total', `${doc.tranches.totalPct}%`, doc.tranches.totalAmount]} />
+            </tbody>
+          </table>
         </>
       )}
       {doc.gstSummary && (
-        <table className="mt-2 ml-auto text-[13px]">
+        <div className="group relative mt-2 ml-auto w-fit">
+        {editing?.onHideLine && <RemoveTool what="GST summary" onRemove={() => editing.onHideLine!('gstSummary')} />}
+        <table className="text-[13px]">
           <tbody>
             <tr><td className="pr-6">Fees</td><td className="text-right">{doc.gstSummary.fee}</td></tr>
             <tr><td className="pr-6">{doc.gstSummary.gstLabel}</td><td className="text-right">{doc.gstSummary.gst}</td></tr>
             <tr className="font-bold"><td className="pr-6">Total</td><td className="text-right">{doc.gstSummary.total}</td></tr>
           </tbody>
         </table>
+        </div>
       )}
 
       <H>Deliverables and timelines:</H>
@@ -104,11 +156,11 @@ export function QuotePreview({ doc, company, editing }: { doc: QuoteDoc; company
         </thead>
         <tbody>
           {doc.timeline.rows.map((r) => (
-            <tr key={r.id}>
-              <Td>{r.n}</Td>
-              <Td><E k={r.labelKey} text={r.label} /></Td>
-              <Td>{r.period}</Td>
-            </tr>
+            <Row
+              key={r.id}
+              cells={[r.n, <E k={r.labelKey} text={r.label} />, r.period]}
+              onRemove={editing?.onRemoveRow ? () => editing.onRemoveRow!('timeline', r.id) : undefined}
+            />
           ))}
           <tr className="font-bold">
             <Td />
@@ -129,11 +181,11 @@ export function QuotePreview({ doc, company, editing }: { doc: QuoteDoc; company
             </thead>
             <tbody>
               {doc.costs.rows.map((r) => (
-                <tr key={r.id}>
-                  <Td>{r.n}</Td>
-                  <Td><E k={r.labelKey} text={r.label} /></Td>
-                  <Td><E k={r.valueKey} text={r.value} /></Td>
-                </tr>
+                <Row
+                  key={r.id}
+                  cells={[r.n, <E k={r.labelKey} text={r.label} />, <E k={r.valueKey} text={r.value} />]}
+                  onRemove={editing?.onRemoveRow ? () => editing.onRemoveRow!('cost', r.id) : undefined}
+                />
               ))}
             </tbody>
           </table>
@@ -160,8 +212,8 @@ export function QuotePreview({ doc, company, editing }: { doc: QuoteDoc; company
         ))}
       </ol>
 
-      <p className="mt-6"><E k="validity" text={doc.validity} /></p>
-      <p className="mt-4"><E k="mouNote" text={doc.mouNote} /></p>
+      <Line k="validity" text={doc.validity} className="mt-6" />
+      <Line k="mouNote" text={doc.mouNote} className="mt-4" />
 
       <p className="mt-6">Yours Sincerely,</p>
       <p className="mt-4">{doc.signoff.name}<br />{doc.signoff.title}<br />{doc.signoff.company}</p>

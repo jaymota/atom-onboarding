@@ -60,6 +60,8 @@ export interface QuoteInput {
   customAssumptions: { id: string; text: string }[]
   /** Jay's own order of the terms (ids). */
   assumptionOrder?: string[]
+  /** Single sentences/blocks Jay has removed: 'intro', 'validity', 'mouNote', 'retainerPayable', 'gstSummary', 'tranchesIntro'. */
+  hiddenLines?: string[]
   removedCosts: string[]
   customCosts: CustomRow[]
 }
@@ -432,7 +434,26 @@ export function buildQuoteDoc(input: QuoteInput, settings: Settings): QuoteDoc {
   clauses.forEach((c, i) => (c.roman = toRoman(i + 1)))
   doc.assumptions = clauses
 
+  // Lines Jay removed by hand
+  const hidden = new Set(input.hiddenLines ?? [])
+  if (hidden.has('intro')) doc.intro = ''
+  if (hidden.has('validity')) doc.validity = ''
+  if (hidden.has('mouNote')) doc.mouNote = ''
+  if (hidden.has('retainerPayable')) doc.retainerPayable = undefined
+  if (hidden.has('tranchesIntro')) doc.tranchesIntro = ''
+  if (hidden.has('gstSummary')) doc.gstSummary = undefined
+
   return doc
+}
+
+/** Friendly names for removable lines (shown in "Removed lines" so Jay can restore them). */
+export const LINE_LABELS: Record<string, string> = {
+  intro: 'Scope intro sentence',
+  validity: 'Validity line',
+  mouNote: 'MOU note',
+  retainerPayable: '“Payable at the start of every month” line',
+  tranchesIntro: 'Tranches intro sentence',
+  gstSummary: 'GST and total summary',
 }
 
 /** A fresh quote with sensible defaults. */
