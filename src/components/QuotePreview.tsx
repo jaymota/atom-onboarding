@@ -17,47 +17,7 @@ export interface PreviewEditing {
   onHideLine?: (key: string) => void
 }
 
-/** A ✕ that appears to the left of a table row or line on hover. */
-function RemoveTool({ onRemove, what }: { onRemove: () => void; what: string }) {
-  return (
-    <button
-      type="button"
-      onClick={onRemove}
-      title={`Remove this ${what}`}
-      className="absolute -left-10 top-0 hidden h-7 w-7 items-center justify-center rounded-md border border-neutral-200 bg-white font-sans text-sm text-neutral-700 shadow-sm hover:bg-atom-aqua hover:text-red-600 group-hover:flex"
-    >
-      ✕
-    </button>
-  )
-}
-
-/** A paragraph that can be removed in edit mode. */
-function Line({ k, text, className = '' }: { k: string; text: string; className?: string }) {
-  const editing = useContext(EditingContext)
-  if (!text) return null
-  return (
-    <p className={`group relative ${className}`}>
-      {editing?.onHideLine && <RemoveTool what="line" onRemove={() => editing.onHideLine!(k)} />}
-      <E k={k} text={text} />
-    </p>
-  )
-}
-
-/** Table row whose first cell carries a remove button in edit mode. */
-function Row({ cells, onRemove, bold }: { cells: ReactNode[]; onRemove?: () => void; bold?: boolean }) {
-  return (
-    <tr className={`group ${bold ? 'font-bold' : ''}`}>
-      {cells.map((c, i) => (
-        <td key={i} className={`border border-neutral-400 px-2 py-1 align-top ${i === 0 ? 'relative' : ''}`}>
-          {i === 0 && onRemove && <RemoveTool what="row" onRemove={onRemove} />}
-          {c}
-        </td>
-      ))}
-    </tr>
-  )
-}
-
-/** Small ↑ ↓ ✕ buttons shown when hovering a point (edit mode only). */
+/** ↑ ↓ ✕ buttons at the end of a point (faint until hovered). */
 function PointTools({ first, last, onMove, onRemove, what }: {
   first: boolean
   last: boolean
@@ -65,13 +25,58 @@ function PointTools({ first, last, onMove, onRemove, what }: {
   onRemove: () => void
   what: string
 }) {
-  const btn = 'flex h-7 w-7 items-center justify-center rounded text-sm text-neutral-700 hover:bg-atom-aqua disabled:opacity-25'
+  const btn = 'flex h-6 w-6 items-center justify-center rounded text-xs text-neutral-600 hover:bg-atom-aqua disabled:opacity-25'
   return (
-    <span className="absolute -left-[5.5rem] -top-0.5 hidden items-center rounded-md border border-neutral-200 bg-white font-sans text-neutral-500 shadow-sm group-hover:flex">
+    <span className="ml-1 inline-flex h-6 shrink-0 items-center self-start rounded-md border border-neutral-200 bg-white font-sans opacity-40 shadow-sm transition group-hover:opacity-100">
       <button type="button" className={btn} disabled={first} onClick={() => onMove(-1)} title={`Move ${what} up`}>↑</button>
       <button type="button" className={btn} disabled={last} onClick={() => onMove(1)} title={`Move ${what} down`}>↓</button>
       <button type="button" className={`${btn} hover:text-red-600`} onClick={onRemove} title={`Remove this ${what}`}>✕</button>
     </span>
+  )
+}
+
+/** A ✕ shown on hover (and faintly otherwise) that removes a row or line. */
+function RemoveTool({ onRemove, what, className = '' }: { onRemove: () => void; what: string; className?: string }) {
+  return (
+    <button
+      type="button"
+      onClick={onRemove}
+      title={`Remove this ${what}`}
+      aria-label={`Remove this ${what}`}
+      className={`inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-md border border-neutral-200 bg-white font-sans text-xs font-normal text-neutral-500 opacity-40 shadow-sm transition hover:border-red-300 hover:text-red-600 group-hover:opacity-100 ${className}`}
+    >
+      ✕
+    </button>
+  )
+}
+
+/** A paragraph that can be removed in edit mode (✕ sits at the end of the line). */
+function Line({ k, text, className = '' }: { k: string; text: string; className?: string }) {
+  const editing = useContext(EditingContext)
+  if (!text) return null
+  return (
+    <p className={`group flex items-start gap-2 ${className}`}>
+      <span className="flex-1"><E k={k} text={text} /></span>
+      {editing?.onHideLine && <RemoveTool what="line" onRemove={() => editing.onHideLine!(k)} />}
+    </p>
+  )
+}
+
+/** Table row; in edit mode the first cell shows a ✕ next to the number. */
+function Row({ cells, onRemove, bold }: { cells: ReactNode[]; onRemove?: () => void; bold?: boolean }) {
+  return (
+    <tr className={`group ${bold ? 'font-bold' : ''}`}>
+      {cells.map((c, i) => (
+        <td key={i} className="border border-neutral-400 px-2 py-1 align-top">
+          {i === 0 && onRemove ? (
+            <span className="flex items-start justify-between gap-1">
+              <span>{c}</span>
+              <RemoveTool what="row" onRemove={onRemove} />
+            </span>
+          ) : c}
+        </td>
+      ))}
+    </tr>
   )
 }
 
@@ -96,6 +101,8 @@ export function QuotePreview({ doc, company, editing }: { doc: QuoteDoc; company
           <ol className="ml-6 space-y-1">
             {ph.items.map((it, idx) => (
               <li key={it.id} className="group relative flex gap-2">
+                <span className="w-7 shrink-0 text-right">{it.n}.</span>
+                <span className="flex-1"><E k={it.key} text={it.text} /></span>
                 {editing?.onRemoveItem && (
                   <PointTools
                     what="point"
@@ -105,8 +112,6 @@ export function QuotePreview({ doc, company, editing }: { doc: QuoteDoc; company
                     onRemove={() => editing.onRemoveItem!(it.id)}
                   />
                 )}
-                <span className="w-7 shrink-0 text-right">{it.n}.</span>
-                <span className="flex-1"><E k={it.key} text={it.text} /></span>
               </li>
             ))}
           </ol>
@@ -135,8 +140,7 @@ export function QuotePreview({ doc, company, editing }: { doc: QuoteDoc; company
         </>
       )}
       {doc.gstSummary && (
-        <div className="group relative mt-2 ml-auto w-fit">
-        {editing?.onHideLine && <RemoveTool what="GST summary" onRemove={() => editing.onHideLine!('gstSummary')} />}
+        <div className="group mt-2 ml-auto flex w-fit items-start gap-2">
         <table className="text-[13px]">
           <tbody>
             <tr><td className="pr-6">Fees</td><td className="text-right">{doc.gstSummary.fee}</td></tr>
@@ -144,6 +148,7 @@ export function QuotePreview({ doc, company, editing }: { doc: QuoteDoc; company
             <tr className="font-bold"><td className="pr-6">Total</td><td className="text-right">{doc.gstSummary.total}</td></tr>
           </tbody>
         </table>
+        {editing?.onHideLine && <RemoveTool what="GST summary" onRemove={() => editing.onHideLine!('gstSummary')} />}
         </div>
       )}
 
@@ -158,7 +163,7 @@ export function QuotePreview({ doc, company, editing }: { doc: QuoteDoc; company
           {doc.timeline.rows.map((r) => (
             <Row
               key={r.id}
-              cells={[r.n, <E k={r.labelKey} text={r.label} />, r.period]}
+              cells={[r.n, <E k={r.labelKey} text={r.label} />, <E k={`tlp:${r.id}`} text={r.period} />]}
               onRemove={editing?.onRemoveRow ? () => editing.onRemoveRow!('timeline', r.id) : undefined}
             />
           ))}
@@ -197,6 +202,8 @@ export function QuotePreview({ doc, company, editing }: { doc: QuoteDoc; company
       <ol className="mt-2 ml-4 space-y-1">
         {doc.assumptions.map((a, idx) => (
           <li key={a.id} className="group relative flex gap-2">
+            <span className="w-9 shrink-0 text-right">{a.roman}.</span>
+            <span className="flex-1"><E k={a.key} text={a.text} /></span>
             {editing?.onRemoveTerm && (
               <PointTools
                 what="term"
@@ -206,8 +213,6 @@ export function QuotePreview({ doc, company, editing }: { doc: QuoteDoc; company
                 onRemove={() => editing.onRemoveTerm!(a.id)}
               />
             )}
-            <span className="w-9 shrink-0 text-right">{a.roman}.</span>
-            <span className="flex-1"><E k={a.key} text={a.text} /></span>
           </li>
         ))}
       </ol>

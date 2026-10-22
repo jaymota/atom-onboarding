@@ -180,7 +180,11 @@ export function Editable({
   useEffect(() => {
     if (editing) {
       setDraft(text)
-      setTimeout(() => ref.current?.focus(), 0)
+      setTimeout(() => {
+        ref.current?.focus()
+        // Short values (like "Week 5 - Week 9") are selected, so typing replaces them.
+        if (text.length <= 40) ref.current?.select()
+      }, 0)
     }
   }, [editing, text])
 

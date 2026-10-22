@@ -58,7 +58,7 @@ Work down the left-hand sections:
    - Tastings and pilot trials default to **3 and 3** for projects, and **2 and 2 per month** for retainers. Change the numbers if needed, and the wording updates everywhere.
 5. **Fees**: the fee starts as a grey **suggestion**. Change it if you like, then tick **“I’ve confirmed this fee”**. You can't approve without this.
    - Milestone quotes show the payment tranches. The total must be 100%, and it turns red if not.
-6. **Timeline**: change any week number if you need to.
+6. **Timeline**: change any week number here, **or click the weeks in the quote's timeline table** (e.g. “Week 5 - Week 9”) and type new ones. The total updates by itself. You can also type something else, like “Ongoing”.
 7. **Scope items**: add your own items, or bring back removed ones.
 8. **Potential additional costs**: switch rows on or off, or add your own.
 9. **Terms & assumptions**: short client-friendly terms covering payment, termination, what's included, costs at actuals and handover. The right ones are pre-ticked for milestone or retainer. Tick or untick them, or add your own. (Payment and termination terms aren't repeated in the MOU's assumptions clause, because the MOU has its own full clauses for them.)

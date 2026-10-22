@@ -293,7 +293,16 @@ export default function QuoteBuilder() {
             doc={doc}
             company={settings.company}
             editing={locked ? undefined : {
-              onText: setText,
+              onText: (key, value) => {
+                // Typing "Week 5 - Week 9" (or "5-9") in the timeline changes the real weeks, so the total updates too.
+                const m = key.startsWith('tlp:') ? value.match(/^\s*(?:week\s*)?(\d+)\s*(?:-|–|to)\s*(?:week\s*)?(\d+)\s*$/i) : null
+                if (m) {
+                  const rowId = key.slice(4)
+                  const texts = { ...input.texts }
+                  delete texts[key]
+                  set({ texts, timeline: { ...input.timeline, [rowId]: { ...(input.timeline[rowId] ?? {}), start: Number(m[1]), end: Number(m[2]) } } })
+                } else setText(key, value)
+              },
               onReset: resetText,
               isEdited: (k) => k in input.texts,
               onRemoveItem: (itemId) =>

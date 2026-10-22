@@ -300,6 +300,8 @@ export function buildQuoteDoc(input: QuoteInput, settings: Settings): QuoteDoc {
     r.n = i + 1
     if (r.unscheduled) {
       r.period = input.texts[`tlp:${r.id}`] ?? 'As agreed'
+    } else if (input.texts[`tlp:${r.id}`]) {
+      r.period = input.texts[`tlp:${r.id}`]
     } else if (r.openEnded) {
       r.start = totalWeeks
       r.period = `Week ${totalWeeks} +`
